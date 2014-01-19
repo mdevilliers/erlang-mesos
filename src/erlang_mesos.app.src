@@ -1,0 +1,12 @@
+{application, erlang_mesos,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { erlang_mesos_app, []}},
+  {env, []}
+ ]}.
