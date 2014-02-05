@@ -44,8 +44,7 @@ schedular_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	if(enif_get_string(env, argv[1], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
 	{	
-		state->scheduler_state = scheduler_init(info, masterUrl);
-		
+		state->scheduler_state = scheduler_init(info, masterUrl);		
 	}else
 	{
 		return enif_make_tuple2(env, 
@@ -54,6 +53,13 @@ schedular_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	}
 
 	return enif_make_atom(env, "ok");
+}
+
+static void* scheduler_do_start(void* obj)
+{
+	state_ptr state = (state_ptr) obj;
+	scheduler_start( state->scheduler_state );
+	return NULL;
 }
 
 static ERL_NIF_TERM
@@ -65,23 +71,15 @@ schedular_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, enif_make_atom(env, "state_error"), enif_make_atom(env, "call_schedular_init_first"));
 	}
+	
+	state->scheduler_worker_thread_options = enif_thread_opts_create("scheduler_thread_opts");
+	enif_thread_create("scheduler_thread", 
+		&(state->scheduler_worker_thread), 
+		scheduler_do_start, 
+		state, 
+		state->scheduler_worker_thread_options);
 
-	scheduler_start( state->scheduler_state ); // needs to start in new thread
 	return enif_make_atom(env, "ok");
-}
-
-static scheduler_do_start(state_ptr state )
-{
-	scheduler_start( state->scheduler_state );
-
-	// state->opts = enif_thread_opts_create("thread_opts");
-    //if(enif_thread_create(
-    //        "", &(state->qthread), thr_main, state, state->opts
-    //    ) != 0)
-   // {
-    //    goto error;
-    //}
-
 }
 
 

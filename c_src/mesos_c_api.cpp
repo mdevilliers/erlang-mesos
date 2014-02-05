@@ -142,6 +142,7 @@ public:
 
 SchedulerPtrPair scheduler_init(CFrameworkInfo info, const char* master)
 {
+    fprintf(stderr, "%s \n" , "scheduler_init" );
     SchedulerPtrPair ret ;
 
     CScheduler* scheduler = new CScheduler();
@@ -154,7 +155,6 @@ SchedulerPtrPair scheduler_init(CFrameworkInfo info, const char* master)
      scheduler->info,
      std::string(master));
 
-    driver->run();
     ret.driver = driver;
     ret.scheduler = scheduler;
     return ret;
@@ -162,8 +162,9 @@ SchedulerPtrPair scheduler_init(CFrameworkInfo info, const char* master)
 
 SchedulerDriverStatus scheduler_start(SchedulerPtrPair state)
 {
-    assert(state.driver != NULL);
+    fprintf(stderr, "%s \n" , "scheduler_start" );
 
+    assert(state.driver != NULL);
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->start();
 }
