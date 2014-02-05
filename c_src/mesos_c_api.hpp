@@ -3,6 +3,8 @@
 #ifndef MESOS_API_C_H
 #define MESOS_API_C_H
 
+#include "erl_nif.h"
+
 typedef void* CFrameworkInfo ;
 
 typedef struct {
@@ -21,6 +23,7 @@ struct state_t
 {
 	//ErlNifMutex*            lock;
     SchedulerPtrPair scheduler_state;
+    ErlDrvTid* schedular_worker_thread; 
 };
 
 typedef struct state_t* state_ptr;
