@@ -23,8 +23,8 @@ struct state_t
 {
 	//ErlNifMutex*            lock;
     SchedulerPtrPair scheduler_state;
-    ErlNifThreadOpts*   scheduler_worker_thread_options;
-    ErlNifTid* scheduler_worker_thread; 
+    //ErlNifThreadOpts*   scheduler_worker_thread_options;
+    //ErlNifTid* scheduler_worker_thread; 
 };
 
 typedef struct state_t* state_ptr;
