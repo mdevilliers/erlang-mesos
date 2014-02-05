@@ -181,15 +181,15 @@ void CScheduler::registered(SchedulerDriver* driver,
                           const MasterInfo& masterInfo)
                           {
     fprintf(stderr, "%s \n" , "Registered" );
-    fprintf(stderr, frameworkId.DebugString().c_str());
-    fprintf(stderr, masterInfo.DebugString().c_str());
+    fprintf(stderr, frameworkId.DebugString().c_str(), "");
+    fprintf(stderr, masterInfo.DebugString().c_str(), "");
                           }
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
                               {
                               fprintf(stderr, "%s \n" , "Offers" );
-      for(int i = 0 ; i < offers.size(); i++)
+      for(uint i = 0 ; i < offers.size(); i++)
       {
         Offer offer = offers.at(i);
         fprintf(stderr, "%s \n" , offer.DebugString().c_str() );

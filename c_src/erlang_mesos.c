@@ -37,7 +37,9 @@ schedular_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 		info =  newFrameworkInfo(obj);
 	}else
 	{
-		return enif_make_tuple2(env, enif_make_atom(env, "argument_error"), enif_make_atom(env, "FrameWorkInfo"));
+		return enif_make_tuple2(env, 
+								enif_make_atom(env, "argument_error"), 
+								enif_make_string(env, "Invalid or corrupted FrameWorkInfo", ERL_NIF_LATIN1));
 	}
 
 	if(enif_get_string(env, argv[1], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
@@ -46,7 +48,9 @@ schedular_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 		
 	}else
 	{
-		return enif_make_tuple2(env, enif_make_atom(env, "argument_error"), enif_make_atom(env, "masterUrl"));
+		return enif_make_tuple2(env, 
+								enif_make_atom(env, "argument_error"), 
+								enif_make_string(env, "Invalid or corrupted master url", ERL_NIF_LATIN1));
 	}
 
 	return enif_make_atom(env, "ok");
@@ -64,6 +68,20 @@ schedular_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	scheduler_start( state->scheduler_state ); // needs to start in new thread
 	return enif_make_atom(env, "ok");
+}
+
+static scheduler_do_start(state_ptr state )
+{
+	scheduler_start( state->scheduler_state );
+
+	// state->opts = enif_thread_opts_create("thread_opts");
+    //if(enif_thread_create(
+    //        "", &(state->qthread), thr_main, state, state->opts
+    //    ) != 0)
+   // {
+    //    goto error;
+    //}
+
 }
 
 
