@@ -15,6 +15,7 @@ typedef struct {
 typedef struct {
   void* scheduler;
   void* driver;
+  ErlNifPid* pid;
 } SchedulerPtrPair;
 
 typedef int SchedulerDriverStatus ;

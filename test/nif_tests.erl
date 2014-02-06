@@ -18,6 +18,14 @@ run_nif_test_() ->
 integration_with_mesos() ->
 	Master = "127.0.1.1:5050",
 	Message = mesos:encode_msg( #'FrameworkInfo'{user="Mark", name="Awesome"}),
-	ok = erlang_mesos:scheduler_init(Message,Master),
+	Pid = self(),
+	ok = erlang_mesos:scheduler_init( Pid, Message, Master ),
 	ok = erlang_mesos:scheduler_start(),
+
+	receive
+		Message ->
+			io:format("~p~n", [Message])
+	end,
+
+
 	timer:sleep(2000).

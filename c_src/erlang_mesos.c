@@ -23,13 +23,21 @@ unload(ErlNifEnv* env, void* priv)
 static ERL_NIF_TERM
 nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	ErlNifPid pid;
 	ErlNifBinary frameworkInfo_binary;
 	char masterUrl[MAXBUFLEN];
 	CFrameworkInfo info;
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 
- 	if (enif_inspect_binary(env, argv[0], &frameworkInfo_binary)) 
+	if(!enif_get_local_pid(env, argv[0], &pid))
+    {
+    	return enif_make_tuple2(env, 
+								enif_make_atom(env, "argument_error"), 
+								enif_make_string(env, "Invalid or corrupted Pid", ERL_NIF_LATIN1));
+    }
+
+ 	if (enif_inspect_binary(env, argv[1], &frameworkInfo_binary)) 
 	{
 		ProtobufObj obj ;
 		obj.data = frameworkInfo_binary.data;
@@ -42,7 +50,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 								enif_make_string(env, "Invalid or corrupted FrameWorkInfo", ERL_NIF_LATIN1));
 	}
 
-	if(enif_get_string(env, argv[1], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
+	if(enif_get_string(env, argv[2], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
 	{	
 		state->scheduler_state = scheduler_init(info, masterUrl);		
 	}else
@@ -51,6 +59,8 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 								enif_make_atom(env, "argument_error"), 
 								enif_make_string(env, "Invalid or corrupted master url", ERL_NIF_LATIN1));
 	}
+	
+	state->scheduler_state.pid = &pid;
 
 	return enif_make_atom(env, "ok");
 }
@@ -87,7 +97,7 @@ nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ErlNifFunc nif_funcs[] = {
-	{"scheduler_init", 2 , nif_scheduler_init},
+	{"scheduler_init", 3 , nif_scheduler_init},
 	{"scheduler_start", 0 , nif_scheduler_start}
 };
 
