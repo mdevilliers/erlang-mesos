@@ -19,13 +19,20 @@ integration_with_mesos() ->
 	Master = "127.0.1.1:5050",
 	Message = mesos:encode_msg( #'FrameworkInfo'{user="Mark", name="Awesome"}),
 	Pid = self(),
+	%?debugFmt("Pid : ~p~n", [Pid]),
+
 	ok = erlang_mesos:scheduler_init( Pid, Message, Master ),
 	ok = erlang_mesos:scheduler_start(),
 
-	receive
-		Message ->
-			io:format("~p~n", [Message])
-	end,
+	timer:sleep(1000),
+	flush().
 
-
-	timer:sleep(2000).
+flush() ->
+	receive 
+		Any ->
+			?debugFmt("message from nif : ~p~n", [Any]),
+			flush()
+	after 
+		0 ->
+			true
+	end.

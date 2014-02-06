@@ -2,14 +2,26 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "erl_nif.h"
+
 #include "mesos_c_api.hpp"
 
 #include <mesos/mesos.hpp>
 #include <mesos/scheduler.hpp>
 #include "mesos/mesos.pb.h"
 
+
+
 using namespace mesos;
 using namespace std;
+
+template <class T> 
+ERL_NIF_TERM pb_obj_to_binary(ErlNifEnv *env, const T& obj)  {
+    ErlNifBinary res;
+    enif_alloc_binary(obj.ByteSize(), &res);
+    obj.SerializeToArray(res.data, res.size);
+    return enif_make_binary(env, &res);
+}
 
 class CScheduler : public Scheduler
 {
@@ -135,17 +147,19 @@ public:
    {
    };
 
-//  SchedulerCallbacks callbacks;
+  // SchedulerCallbacks callbacks;
   void* payload;
   FrameworkInfo info;
+  ErlNifPid* pid;
 };
 
-SchedulerPtrPair scheduler_init(CFrameworkInfo info, const char* master)
+SchedulerPtrPair scheduler_init(ErlNifPid *pid, CFrameworkInfo info, const char* master)
 {
     fprintf(stderr, "%s \n" , "scheduler_init" );
     SchedulerPtrPair ret ;
 
     CScheduler* scheduler = new CScheduler();
+    scheduler->pid = pid;
 
     FrameworkInfo* frameworkInfo = reinterpret_cast<FrameworkInfo*>(info);
     scheduler->info = *frameworkInfo;
@@ -182,9 +196,30 @@ void CScheduler::registered(SchedulerDriver* driver,
                           const MasterInfo& masterInfo)
                           {
     fprintf(stderr, "%s \n" , "Registered" );
-    fprintf(stderr, frameworkId.DebugString().c_str(), "");
-    fprintf(stderr, masterInfo.DebugString().c_str(), "");
-                          }
+
+    assert(this->pid != NULL);
+
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM framework_pb = pb_obj_to_binary(env, frameworkId);
+    ERL_NIF_TERM masterInfo_pb = pb_obj_to_binary(env, masterInfo);
+
+    ERL_NIF_TERM message = enif_make_tuple3(env, 
+                              enif_make_atom(env, "registered"), 
+                              framework_pb,
+                              masterInfo_pb);
+    
+    if(enif_send(NULL, this->pid, env, message))
+    {
+      fprintf(stderr, "%s \n" , "sent" );  
+    }else
+    {
+      fprintf(stderr, "%s \n" , "not sent" );
+    }
+    
+    enif_clear_env(env);
+}
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
@@ -216,3 +251,4 @@ void delCFrameworkInfo(CFrameworkInfo info)
 {
     delete reinterpret_cast<FrameworkInfo*>(info);
 }
+

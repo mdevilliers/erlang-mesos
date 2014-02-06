@@ -15,7 +15,6 @@ typedef struct {
 typedef struct {
   void* scheduler;
   void* driver;
-  ErlNifPid* pid;
 } SchedulerPtrPair;
 
 typedef int SchedulerDriverStatus ;
@@ -39,7 +38,7 @@ extern "C" {
  CFrameworkInfo newCFrameworkInfo(char* name);
  void delCFrameworkInfo();
 
- SchedulerPtrPair scheduler_init(CFrameworkInfo info, const char* master);
+ SchedulerPtrPair scheduler_init( ErlNifPid *pid, CFrameworkInfo info, const char* master);
  SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
 #ifdef __cplusplus
