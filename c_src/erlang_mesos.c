@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "erl_nif.h"
-#include "example.hpp"
 #include "mesos_c_api.hpp"    
 
 #define MAXBUFLEN 1024
@@ -23,7 +22,6 @@ unload(ErlNifEnv* env, void* priv)
 static ERL_NIF_TERM
 nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-	//ErlNifPid pid;
 	ErlNifBinary frameworkInfo_binary;
 	char masterUrl[MAXBUFLEN];
 	CFrameworkInfo info;
@@ -62,14 +60,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	return enif_make_atom(env, "ok");
 }
-/*
-static void* scheduler_do_start(void* obj)
-{
-	state_ptr state = (state_ptr) obj;
-	scheduler_start( state->scheduler_state );
-	return NULL;
-}
-*/
+
 static ERL_NIF_TERM
 nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -82,14 +73,6 @@ nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
 	}
 	
-	/*
-	state->scheduler_worker_thread_options = enif_thread_opts_create("scheduler_thread_opts");
-	enif_thread_create("scheduler_thread", 
-		&(state->scheduler_worker_thread), 
-		scheduler_do_start, 
-		state, 
-		state->scheduler_worker_thread_options);
-	*/
 	scheduler_start( state->scheduler_state );
 	return enif_make_atom(env, "ok");
 }

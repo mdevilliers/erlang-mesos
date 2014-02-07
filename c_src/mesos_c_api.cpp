@@ -9,19 +9,11 @@
 #include <mesos/mesos.hpp>
 #include <mesos/scheduler.hpp>
 #include "mesos/mesos.pb.h"
-
-
+#include "utils.hpp"
 
 using namespace mesos;
 using namespace std;
 
-template <class T> 
-ERL_NIF_TERM pb_obj_to_binary(ErlNifEnv *env, const T& obj)  {
-    ErlNifBinary res;
-    enif_alloc_binary(obj.ByteSize(), &res);
-    obj.SerializeToArray(res.data, res.size);
-    return enif_make_binary(env, &res);
-}
 
 class CScheduler : public Scheduler
 {
@@ -199,7 +191,6 @@ void CScheduler::registered(SchedulerDriver* driver,
 
     assert(this->pid != NULL);
 
-
     ErlNifEnv* env = enif_alloc_env();
 
     ERL_NIF_TERM framework_pb = pb_obj_to_binary(env, frameworkId);
@@ -224,7 +215,7 @@ void CScheduler::registered(SchedulerDriver* driver,
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
                               {
-                              fprintf(stderr, "%s \n" , "Offers" );
+      fprintf(stderr, "%s \n" , "Offers" );
       for(uint i = 0 ; i < offers.size(); i++)
       {
         Offer offer = offers.at(i);
