@@ -14,7 +14,6 @@
 using namespace mesos;
 using namespace std;
 
-
 class CScheduler : public Scheduler
 {
 public:
@@ -168,9 +167,8 @@ SchedulerPtrPair scheduler_init(ErlNifPid *pid, CFrameworkInfo info, const char*
 
 SchedulerDriverStatus scheduler_start(SchedulerPtrPair state)
 {
-    fprintf(stderr, "%s \n" , "scheduler_start" );
-
     assert(state.driver != NULL);
+
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->start();
 }
@@ -181,6 +179,14 @@ SchedulerDriverStatus scheduler_join(SchedulerPtrPair state)
 
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->join();
+}
+
+SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state)
+{
+    assert(state.driver != NULL);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->abort();
 }
 
 void CScheduler::registered(SchedulerDriver* driver,

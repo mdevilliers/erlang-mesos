@@ -25,6 +25,9 @@ integration_with_mesos() ->
 	ok = erlang_mesos:scheduler_start(),
 
 	timer:sleep(1000),
+
+	ok = erlang_mesos:scheduler_join(),
+
 	flush().
 
 flush() ->

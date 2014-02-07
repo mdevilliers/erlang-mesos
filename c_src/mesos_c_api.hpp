@@ -41,6 +41,7 @@ extern "C" {
  SchedulerPtrPair scheduler_init( ErlNifPid *pid, CFrameworkInfo info, const char* master);
  SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
+ SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
 #ifdef __cplusplus
 }
 #endif
