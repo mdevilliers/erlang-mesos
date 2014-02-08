@@ -45,9 +45,7 @@ public:
    * Invoked when the scheduler becomes "disconnected" from the master
    * (e.g., the master fails and another is taking over).
    */
-   void disconnected(SchedulerDriver* driver)
-   {
-   };
+   virtual void disconnected(SchedulerDriver* driver);
 
   /**
    * Invoked when resources have been offered to this framework. A
@@ -258,6 +256,27 @@ void CScheduler::reregistered(SchedulerDriver* driver,
                               masterInfo_pb);
     
    enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}
+    
+    enif_clear_env(env);
+};
+
+void CScheduler::disconnected(SchedulerDriver* driver)
+{
+    fprintf(stderr, "%s \n" , "Disconnected" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple(env, 
+                              enif_make_atom(env, "disconected"));
+    
+    enif_send(NULL, this->pid, env, message);
     //{
     //  fprintf(stderr, "%s \n" , "sent" );  
     //}else
