@@ -23,8 +23,8 @@ static ERL_NIF_TERM
 nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	ErlNifBinary frameworkInfo_binary;
+	ErlNifBinary credentials_binary;
 	char masterUrl[MAXBUFLEN];
-	CFrameworkInfo info;
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
@@ -40,23 +40,32 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
  	if (!enif_inspect_binary(env, argv[1], &frameworkInfo_binary)) 
 	{
 		return enif_make_tuple2(env, 
-								enif_make_atom(env, "argument_error"), 
-								enif_make_string(env, "Invalid or corrupted FrameWorkInfo", ERL_NIF_LATIN1));
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted FrameWorkInfo", ERL_NIF_LATIN1));
 	}
 
 	if(!enif_get_string(env, argv[2], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
 	{
 		return enif_make_tuple2(env, 
-								enif_make_atom(env, "argument_error"), 
-								enif_make_string(env, "Invalid or corrupted master url", ERL_NIF_LATIN1));
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted master url", ERL_NIF_LATIN1));
 	}
-	
-	ProtobufObj obj ;
-	obj.data = frameworkInfo_binary.data;
-	obj.size = frameworkInfo_binary.size;
-	info =  newFrameworkInfo(obj);
 
-	state->scheduler_state = scheduler_init(pid, info, masterUrl);
+	if(argc == 4 )
+	{
+		if(!enif_inspect_binary(env,argv[3], &credentials_binary))
+		{			
+			return enif_make_tuple2(env, 
+						enif_make_atom(env, "argument_error"), 
+						enif_make_string(env, "Invalid or corrupted Credential", ERL_NIF_LATIN1));
+			
+		}
+		state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 1, &credentials_binary);
+	}
+	else
+	{
+		state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 0, &credentials_binary);
+	}
 
 	return enif_make_atom(env, "ok");
 }
@@ -120,6 +129,7 @@ nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 static ErlNifFunc nif_funcs[] = {
 	{"scheduler_init", 3 , nif_scheduler_init},
+	{"scheduler_init", 4 , nif_scheduler_init},
 	{"scheduler_start", 0 , nif_scheduler_start},
 	{"scheduler_join", 0 , nif_scheduler_join},
 	{"scheduler_abort", 0 , nif_scheduler_abort}

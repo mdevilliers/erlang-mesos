@@ -5,13 +5,6 @@
 
 #include "erl_nif.h"
 
-typedef void* CFrameworkInfo ;
-
-typedef struct {
-  void* data;
-  size_t size;
-} ProtobufObj;
-
 typedef struct {
   void* scheduler;
   void* driver;
@@ -34,14 +27,11 @@ typedef struct state_t* state_ptr;
 extern "C" {
 #endif
 
- CFrameworkInfo newFrameworkInfo(ProtobufObj obj);
- CFrameworkInfo newCFrameworkInfo(char* name);
- void delCFrameworkInfo();
-
- SchedulerPtrPair scheduler_init( ErlNifPid *pid, CFrameworkInfo info, const char* master);
+ SchedulerPtrPair scheduler_init( ErlNifPid* pid, ErlNifBinary* info, const char* master, int credentialssupplied, ErlNifBinary* credentials);
  SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
+
 #ifdef __cplusplus
 }
 #endif

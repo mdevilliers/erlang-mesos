@@ -1,12 +1,14 @@
 -module (erlang_mesos).
 
--export ([scheduler_init/3,scheduler_start/0,scheduler_join/0,scheduler_abort/0]).
+-export ([scheduler_init/4,scheduler_init/3,scheduler_start/0,scheduler_join/0,scheduler_abort/0]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_mesos).
 -define(LIBNAME, erlang_mesos).
 
-scheduler_init(_, _, _)->
+scheduler_init(_, _, _,_)->
+    not_loaded(?LINE).
+scheduler_init(_, _,_)->
     not_loaded(?LINE).
 scheduler_start() ->
     not_loaded(?LINE).

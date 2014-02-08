@@ -138,27 +138,44 @@ public:
    {
    };
 
-  // SchedulerCallbacks callbacks;
   void* payload;
   FrameworkInfo info;
   ErlNifPid* pid;
 };
 
-SchedulerPtrPair scheduler_init(ErlNifPid *pid, CFrameworkInfo info, const char* master)
+SchedulerPtrPair scheduler_init(ErlNifPid* pid, 
+                                ErlNifBinary* info, 
+                                const char* master, 
+                                int credentialssupplied,
+                                ErlNifBinary* credentials)
 {
     fprintf(stderr, "%s \n" , "scheduler_init" );
     SchedulerPtrPair ret ;
+    Credential credentials_pb ;
 
     CScheduler* scheduler = new CScheduler();
     scheduler->pid = pid;
 
-    FrameworkInfo* frameworkInfo = reinterpret_cast<FrameworkInfo*>(info);
-    scheduler->info = *frameworkInfo;
+    deserialize<FrameworkInfo>(scheduler->info,info);
+    MesosSchedulerDriver* driver ;
 
-    MesosSchedulerDriver* driver = new MesosSchedulerDriver(
-     scheduler,
-     scheduler->info,
-     std::string(master));
+    if(credentialssupplied)
+    {
+
+      deserialize<Credential>(credentials_pb,credentials);  
+
+      driver = new MesosSchedulerDriver(
+                                       scheduler,
+                                       scheduler->info,
+                                       std::string(master),
+                                       credentials_pb);
+    }else
+    {
+      driver = new MesosSchedulerDriver(
+                                     scheduler,
+                                     scheduler->info,
+                                     std::string(master));
+    }
 
     ret.driver = driver;
     ret.scheduler = scheduler;
@@ -228,24 +245,3 @@ void CScheduler::resourceOffers(SchedulerDriver* driver,
         fprintf(stderr, "%s \n" , offer.DebugString().c_str() );
       }
 } ;
-
-CFrameworkInfo newFrameworkInfo(ProtobufObj obj)
-{
-  FrameworkInfo* info = new FrameworkInfo();;
-  info->ParseFromArray(obj.data, obj.size);
-  return reinterpret_cast<void *>(info);
-}
-
-
-CFrameworkInfo newCFrameworkInfo(char* name)
-{
-    FrameworkInfo* info = new FrameworkInfo();
-    info->set_name(name);
-
-    return reinterpret_cast<void *>(info);
-}
-void delCFrameworkInfo(CFrameworkInfo info)
-{
-    delete reinterpret_cast<FrameworkInfo*>(info);
-}
-
