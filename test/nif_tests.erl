@@ -22,8 +22,11 @@ integration_with_mesos() ->
 	Pid = self(),
 
 	ok = erlang_mesos:scheduler_init( Pid, Message, Master),
-	{ok,_Status} = erlang_mesos:scheduler_start(),
+	{ok,_Status1} = erlang_mesos:scheduler_start(),
 	timer:sleep(1000),
+
+	{ok,_Status2} = erlang_mesos:scheduler_stop(1),
+
 	flush().
 
 

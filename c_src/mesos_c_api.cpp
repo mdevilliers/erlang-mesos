@@ -206,6 +206,17 @@ SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state)
     return driver->abort();
 }
 
+SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
+{
+    assert(state.driver != NULL);
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    if(failover){
+      return driver->stop(true);
+    }else{
+      return driver->stop(false);
+    }
+}
+
 void CScheduler::registered(SchedulerDriver* driver,
                           const FrameworkID& frameworkId,
                           const MasterInfo& masterInfo)

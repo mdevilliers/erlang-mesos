@@ -31,6 +31,7 @@ extern "C" {
  SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
+ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover);
 
 #ifdef __cplusplus
 }

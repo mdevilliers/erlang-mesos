@@ -127,12 +127,50 @@ nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 							enif_make_int(env, status));
 }
 
+static ERL_NIF_TERM
+nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+	int failover;
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	//TODO - review this
+	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
+	}
+	
+	if(!enif_get_int( env, argv[0], &failover))
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted failover argument - ensure it is an int e.g. 1 == true, 0 == false", ERL_NIF_LATIN1));
+	}
+
+	if(failover < 0 || failover > 1)
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted failover argument - ensure it is an int e.g. 1 == true, 0 == false", ERL_NIF_LATIN1));
+	}
+
+	SchedulerDriverStatus status = scheduler_stop( state->scheduler_state, failover );
+	
+	return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							enif_make_int(env, status));
+}
+
+
+
 static ErlNifFunc nif_funcs[] = {
-	{"scheduler_init", 3 , nif_scheduler_init},
-	{"scheduler_init", 4 , nif_scheduler_init},
-	{"scheduler_start", 0 , nif_scheduler_start},
-	{"scheduler_join", 0 , nif_scheduler_join},
-	{"scheduler_abort", 0 , nif_scheduler_abort}
+	{"scheduler_init", 3, nif_scheduler_init},
+	{"scheduler_init", 4, nif_scheduler_init},
+	{"scheduler_start", 0, nif_scheduler_start},
+	{"scheduler_join", 0, nif_scheduler_join},
+	{"scheduler_abort", 0, nif_scheduler_abort},
+	{"scheduler_stop", 1, nif_scheduler_stop}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);
