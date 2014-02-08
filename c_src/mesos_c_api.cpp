@@ -38,10 +38,8 @@ public:
    * MasterInfo containing the updated information about the elected master
    * is provided as an argument.
    */
-   void reregistered(SchedulerDriver* driver,
-                            const MasterInfo& masterInfo)
-                            {
-                            } ;
+   virtual void reregistered(SchedulerDriver* driver,
+                            const MasterInfo& masterInfo);
 
   /**
    * Invoked when the scheduler becomes "disconnected" from the master
@@ -222,7 +220,6 @@ void CScheduler::registered(SchedulerDriver* driver,
                           const MasterInfo& masterInfo)
                           {
     fprintf(stderr, "%s \n" , "Registered" );
-
     assert(this->pid != NULL);
 
     ErlNifEnv* env = enif_alloc_env();
@@ -235,16 +232,41 @@ void CScheduler::registered(SchedulerDriver* driver,
                               framework_pb,
                               masterInfo_pb);
     
-    if(enif_send(NULL, this->pid, env, message))
-    {
-      fprintf(stderr, "%s \n" , "sent" );  
-    }else
-    {
-      fprintf(stderr, "%s \n" , "not sent" );
-    }
+    enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}
     
     enif_clear_env(env);
 }
+
+void CScheduler::reregistered(SchedulerDriver* driver,
+                            const MasterInfo& masterInfo)
+                            {
+    fprintf(stderr, "%s \n" , "Reregistered" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM masterInfo_pb = pb_obj_to_binary(env, masterInfo);
+
+    ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "reregistered"), 
+                              masterInfo_pb);
+    
+   enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}
+    
+    enif_clear_env(env);
+};
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
