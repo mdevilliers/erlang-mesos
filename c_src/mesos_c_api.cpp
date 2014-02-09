@@ -73,10 +73,8 @@ public:
    * to launch tasks using an invalid offer will receive TASK_LOST
    * status updates for those tasks (see Scheduler::resourceOffers).
    */
-   void offerRescinded(SchedulerDriver* driver,
-                              const OfferID& offerId)
-                              {
-                              } ;
+   virtual void offerRescinded(SchedulerDriver* driver,
+                              const OfferID& offerId);
 
   /**
    * Invoked when the status of a task has changed (e.g., a slave is
@@ -274,7 +272,7 @@ void CScheduler::disconnected(SchedulerDriver* driver)
     ErlNifEnv* env = enif_alloc_env();
 
     ERL_NIF_TERM message = enif_make_tuple(env, 
-                              enif_make_atom(env, "disconected"));
+                              enif_make_atom(env, "disconnected"));
     
     enif_send(NULL, this->pid, env, message);
     //{
@@ -286,6 +284,29 @@ void CScheduler::disconnected(SchedulerDriver* driver)
     
     enif_clear_env(env);
 };
+
+void CScheduler::offerRescinded(SchedulerDriver* driver,
+                              const OfferID& offerId)
+{
+  fprintf(stderr, "%s \n" , "Disconnected" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "offerRescinded"),
+                              pb_obj_to_binary(env, offerId));
+    
+    enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}
+    
+    enif_clear_env(env);
+} ;
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
