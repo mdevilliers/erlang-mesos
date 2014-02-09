@@ -86,9 +86,8 @@ public:
    * however, that this is currently not true if the slave sending the
    * status update is lost/fails during that time).
    */
-   void statusUpdate(SchedulerDriver* driver,
-                            const TaskStatus& status){
-                            } ;
+   virtual void statusUpdate(SchedulerDriver* driver,
+                            const TaskStatus& status);
 
   /**
    * Invoked when an executor sends a message. These messages are best
@@ -215,7 +214,7 @@ void CScheduler::registered(SchedulerDriver* driver,
                           const FrameworkID& frameworkId,
                           const MasterInfo& masterInfo)
                           {
-    fprintf(stderr, "%s \n" , "Registered" );
+    //fprintf(stderr, "%s \n" , "Registered" );
     assert(this->pid != NULL);
 
     ErlNifEnv* env = enif_alloc_env();
@@ -242,7 +241,7 @@ void CScheduler::registered(SchedulerDriver* driver,
 void CScheduler::reregistered(SchedulerDriver* driver,
                             const MasterInfo& masterInfo)
                             {
-    fprintf(stderr, "%s \n" , "Reregistered" );
+    //fprintf(stderr, "%s \n" , "Reregistered" );
     assert(this->pid != NULL);
 
     ErlNifEnv* env = enif_alloc_env();
@@ -266,7 +265,7 @@ void CScheduler::reregistered(SchedulerDriver* driver,
 
 void CScheduler::disconnected(SchedulerDriver* driver)
 {
-    fprintf(stderr, "%s \n" , "Disconnected" );
+    //fprintf(stderr, "%s \n" , "Disconnected" );
     assert(this->pid != NULL);
 
     ErlNifEnv* env = enif_alloc_env();
@@ -288,7 +287,7 @@ void CScheduler::disconnected(SchedulerDriver* driver)
 void CScheduler::offerRescinded(SchedulerDriver* driver,
                               const OfferID& offerId)
 {
-  fprintf(stderr, "%s \n" , "Disconnected" );
+    //fprintf(stderr, "%s \n" , "offerRescinded" );
     assert(this->pid != NULL);
 
     ErlNifEnv* env = enif_alloc_env();
@@ -307,6 +306,30 @@ void CScheduler::offerRescinded(SchedulerDriver* driver,
     
     enif_clear_env(env);
 } ;
+
+void CScheduler::statusUpdate(SchedulerDriver* driver,
+                            const TaskStatus& status){
+    //fprintf(stderr, "%s \n" , "statusUpdate" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "statusUpdate"),
+                              pb_obj_to_binary(env, status));
+    
+    enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}
+    
+    enif_clear_env(env);
+
+
+                            } ;
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
