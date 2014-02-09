@@ -32,7 +32,21 @@ extern "C" {
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover);
-
+/*
+  virtual Status requestResources(const std::vector<Request>& requests);
+  virtual Status launchTasks(const OfferID& offerId,
+                             const std::vector<TaskInfo>& tasks,
+                             const Filters& filters = Filters());
+  virtual Status killTask(const TaskID& taskId);
+  virtual Status declineOffer(const OfferID& offerId,
+                              const Filters& filters = Filters());
+  virtual Status reviveOffers();
+  virtual Status sendFrameworkMessage(const ExecutorID& executorId,
+                                      const SlaveID& slaveId,
+                                      const std::string& data);
+  virtual Status reconcileTasks(
+      const std::vector<TaskStatus>& statuses);
+*/
 #ifdef __cplusplus
 }
 #endif
