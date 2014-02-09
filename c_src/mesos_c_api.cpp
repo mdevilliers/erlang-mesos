@@ -104,33 +104,26 @@ public:
    * machine failure, network partition). Most frameworks will need to
    * reschedule any tasks launched on this slave on a new slave.
    */
-   void slaveLost(SchedulerDriver* driver,
-                         const SlaveID& slaveId)
-                         {
-                         } ;
+   virtual void slaveLost(SchedulerDriver* driver,
+                         const SlaveID& slaveId);
 
   /**
    * Invoked when an executor has exited/terminated. Note that any
    * tasks running will have TASK_LOST status updates automagically
    * generated.
    */
-   void executorLost(SchedulerDriver* driver,
+   virtual void executorLost(SchedulerDriver* driver,
                             const ExecutorID& executorId,
                             const SlaveID& slaveId,
-                            int status)
-                            {
-                            };
+                            int status);
 
   /**
    * Invoked when there is an unrecoverable error in the scheduler or
    * scheduler driver. The driver will be aborted BEFORE invoking this
    * callback.
    */
-   void error(SchedulerDriver* driver, const std::string& message)
-   {
-   };
+   virtual void error(SchedulerDriver* driver, const std::string& message);
 
-  void* payload;
   FrameworkInfo info;
   ErlNifPid* pid;
 };
@@ -201,6 +194,7 @@ SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state)
 SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
 {
     assert(state.driver != NULL);
+    
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     if(failover){
       return driver->stop(true);
@@ -227,13 +221,6 @@ void CScheduler::registered(SchedulerDriver* driver,
                               masterInfo_pb);
     
     enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}
-    
     enif_clear_env(env);
 }
 
@@ -252,14 +239,7 @@ void CScheduler::reregistered(SchedulerDriver* driver,
                               masterInfo_pb);
     
    enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}
-    
-    enif_clear_env(env);
+   enif_clear_env(env);
 };
 
 void CScheduler::disconnected(SchedulerDriver* driver)
@@ -273,13 +253,6 @@ void CScheduler::disconnected(SchedulerDriver* driver)
                               enif_make_atom(env, "disconnected"));
     
     enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}
-    
     enif_clear_env(env);
 };
 
@@ -296,13 +269,6 @@ void CScheduler::offerRescinded(SchedulerDriver* driver,
                               pb_obj_to_binary(env, offerId));
     
     enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}
-    
     enif_clear_env(env);
 } ;
 
@@ -317,14 +283,7 @@ void CScheduler::statusUpdate(SchedulerDriver* driver,
                               enif_make_atom(env, "statusUpdate"),
                               pb_obj_to_binary(env, status));
     
-    enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}
-    
+    enif_send(NULL, this->pid, env, message);    
     enif_clear_env(env);
 } ;
 
@@ -344,13 +303,58 @@ void CScheduler::frameworkMessage(SchedulerDriver* driver,
                               enif_make_string(env, data.c_str(), ERL_NIF_LATIN1));
     
     enif_send(NULL, this->pid, env, message);
-    //{
-    //  fprintf(stderr, "%s \n" , "sent" );  
-    //}else
-    //{
-    //  fprintf(stderr, "%s \n" , "not sent" );
-    //}  
-                                };
+};
+
+void CScheduler::slaveLost(SchedulerDriver* driver,
+                         const SlaveID& slaveId)
+{
+   //fprintf(stderr, "%s \n" , "slaveLost" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "slaveLost"),
+                              pb_obj_to_binary(env, slaveId));
+    
+    enif_send(NULL, this->pid, env, message);
+    enif_clear_env(env);
+} ;
+
+void CScheduler::executorLost(SchedulerDriver* driver,
+                            const ExecutorID& executorId,
+                            const SlaveID& slaveId,
+                            int status)
+{
+    //fprintf(stderr, "%s \n" , "executorLost" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple4(env, 
+                              enif_make_atom(env, "executorLost"),
+                              pb_obj_to_binary(env, executorId),
+                              pb_obj_to_binary(env, slaveId),
+                              enif_make_int(env,status));
+    
+    enif_send(NULL, this->pid, env, message);
+    enif_clear_env(env);
+};
+
+ void CScheduler::error(SchedulerDriver* driver, const std::string& errormessage)
+ {
+      //fprintf(stderr, "%s \n" , "error" );
+    assert(this->pid != NULL);
+
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "error"),
+                              enif_make_string(env, errormessage.c_str(), ERL_NIF_LATIN1));
+    
+    enif_send(NULL, this->pid, env, message);
+    enif_clear_env(env);
+ };
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
