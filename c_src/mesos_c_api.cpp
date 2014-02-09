@@ -94,11 +94,10 @@ public:
    * effort; do not expect a framework message to be retransmitted in
    * any reliable fashion.
    */
-   void frameworkMessage(SchedulerDriver* driver,
+   virtual void frameworkMessage(SchedulerDriver* driver,
                                 const ExecutorID& executorId,
                                 const SlaveID& slaveId,
-                                const std::string& data) {
-                                };
+                                const std::string& data);
 
   /**
    * Invoked when a slave has been determined unreachable (e.g.,
@@ -327,9 +326,31 @@ void CScheduler::statusUpdate(SchedulerDriver* driver,
     //}
     
     enif_clear_env(env);
+} ;
 
+void CScheduler::frameworkMessage(SchedulerDriver* driver,
+                                const ExecutorID& executorId,
+                                const SlaveID& slaveId,
+                                const std::string& data) {
+    //fprintf(stderr, "%s \n" , "frameworkMessage" );
+    assert(this->pid != NULL);
 
-                            } ;
+    ErlNifEnv* env = enif_alloc_env();
+
+    ERL_NIF_TERM message = enif_make_tuple4(env, 
+                              enif_make_atom(env, "frameworkMessage"),
+                              pb_obj_to_binary(env, executorId),
+                              pb_obj_to_binary(env, slaveId),
+                              enif_make_string(env, data.c_str(), ERL_NIF_LATIN1));
+    
+    enif_send(NULL, this->pid, env, message);
+    //{
+    //  fprintf(stderr, "%s \n" , "sent" );  
+    //}else
+    //{
+    //  fprintf(stderr, "%s \n" , "not sent" );
+    //}  
+                                };
 
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
