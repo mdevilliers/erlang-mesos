@@ -162,6 +162,40 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 							enif_make_int(env, status));
 }
 
+static ERL_NIF_TERM
+nif_scheduler_declineOffer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
+
+	ErlNifBinary offerId_binary;
+	ErlNifBinary filters_binary;
+
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	//TODO - review this
+	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
+	}
+	if (!enif_inspect_binary(env, argv[0], &offerId_binary)) 
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted OfferID", ERL_NIF_LATIN1));
+	}
+	if (!enif_inspect_binary(env, argv[1], &filters_binary)) 
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted Filters", ERL_NIF_LATIN1));
+	}
+
+	SchedulerDriverStatus status = declineOffer( state->scheduler_state, &offerId_binary, &filters_binary );
+
+	return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							enif_make_int(env, status));
+}
 
 
 static ErlNifFunc nif_funcs[] = {
@@ -170,7 +204,8 @@ static ErlNifFunc nif_funcs[] = {
 	{"scheduler_start", 0, nif_scheduler_start},
 	{"scheduler_join", 0, nif_scheduler_join},
 	{"scheduler_abort", 0, nif_scheduler_abort},
-	{"scheduler_stop", 1, nif_scheduler_stop}
+	{"scheduler_stop", 1, nif_scheduler_stop},
+	{"scheduler_declineOffer", 2,nif_scheduler_declineOffer}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);

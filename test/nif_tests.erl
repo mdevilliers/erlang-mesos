@@ -17,12 +17,16 @@ run_nif_test_() ->
 
 integration_with_mesos() ->
 	Master = "127.0.1.1:5050",
-	Message = mesos:encode_msg( #'FrameworkInfo'{user="Mark", name="Awesome"}),
-	_Credentials = mesos:encode_msg( #'Credential'{principal="Mark", secret= <<"abc">> }),
+	Message = mesos:encode_msg( #'FrameworkInfo'{user="Mark", name="xxxx"}),
+
+	%optional credential
+	%Credentials = mesos:encode_msg( #'Credential'{principal="Mark", secret= <<"abc">> }),
+	
 	Pid = self(),
 
 	ok = erlang_mesos:scheduler_init( Pid, Message, Master),
 	{ok,_Status1} = erlang_mesos:scheduler_start(),
+	
 	timer:sleep(1000),
 
 	{ok,_Status2} = erlang_mesos:scheduler_stop(1),

@@ -32,6 +32,8 @@ extern "C" {
  SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
  SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover);
+ SchedulerDriverStatus declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters);
+
 /*
   virtual Status requestResources(const std::vector<Request>& requests);
   virtual Status launchTasks(const OfferID& offerId,

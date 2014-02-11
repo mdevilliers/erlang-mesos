@@ -134,7 +134,7 @@ SchedulerPtrPair scheduler_init(ErlNifPid* pid,
                                 int credentialssupplied,
                                 ErlNifBinary* credentials)
 {
-    fprintf(stderr, "%s \n" , "scheduler_init" );
+    //fprintf(stderr, "%s \n" , "scheduler_init" );
     SchedulerPtrPair ret ;
     Credential credentials_pb ;
 
@@ -202,6 +202,20 @@ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
       return driver->stop(false);
     }
 }
+
+ SchedulerDriverStatus declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters)
+ {
+    assert(state.driver != NULL);
+    OfferID offerid_pb;
+    Filters filter_pb;
+
+    deserialize<OfferID>(offerid_pb,offerId);
+    deserialize<Filters>(filter_pb,filters);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->declineOffer(offerid_pb,
+                              filter_pb);
+ }
 
 void CScheduler::registered(SchedulerDriver* driver,
                           const FrameworkID& frameworkId,
@@ -359,10 +373,20 @@ void CScheduler::executorLost(SchedulerDriver* driver,
 void CScheduler::resourceOffers(SchedulerDriver* driver,
                               const std::vector<Offer>& offers)
                               {
-      fprintf(stderr, "%s \n" , "Offers" );
+      assert(this->pid != NULL);
+
+      ErlNifEnv* env = enif_alloc_env();
+
       for(uint i = 0 ; i < offers.size(); i++)
       {
         Offer offer = offers.at(i);
-        fprintf(stderr, "%s \n" , offer.DebugString().c_str() );
+
+        ERL_NIF_TERM message = enif_make_tuple2(env, 
+                              enif_make_atom(env, "resourceOffers"),
+                              pb_obj_to_binary(env, offer));
+
+        enif_send(NULL, this->pid, env, message);
       }
+
+      enif_clear_env(env);
 } ;
