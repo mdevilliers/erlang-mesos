@@ -1,5 +1,7 @@
 -module (erlang_mesos).
 
+-include_lib("include/mesos.hrl").
+
 -export ([scheduler_init/4,
             scheduler_init/3,
             scheduler_start/0,
@@ -16,26 +18,48 @@
 -define(APPNAME, erlang_mesos).
 -define(LIBNAME, erlang_mesos).
 
-scheduler_init(A, B, C, D)->
-    nif_scheduler_init(A, B, C, D).
-scheduler_init(A, B, C)->
-    nif_scheduler_init(A, B, C).
+scheduler_init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid), 
+                                                            is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                            is_list(MasterLocation),
+                                                            is_record(Credential,'Credential')->
+    nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation, mesos:encode_msg(Credential)).
+
+scheduler_init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
+                                                            is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                            is_list(MasterLocation)->
+    nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation).
+
 scheduler_start() ->
     nif_scheduler_start().
+
 scheduler_join() ->
     nif_scheduler_join().
+
 scheduler_abort() ->
-   nif_scheduler_abort().
-scheduler_stop(A) ->
-    nif_scheduler_stop(A).
-scheduler_declineOffer(A,B)->
-    nif_scheduler_declineOffer(A,B).
-scheduler_killTask(A) ->
-    nif_scheduler_killTask(A).
+    nif_scheduler_abort().
+
+scheduler_stop(Failover) when   is_integer(Failover), 
+                                Failover > -1, 
+                                Failover < 2 ->
+    nif_scheduler_stop(Failover).
+
+scheduler_declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
+                                            is_record(Filter, 'Filters')->
+    nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
+
+scheduler_killTask(TaskId) when is_record(TaskId,'TaskID')->
+    nif_scheduler_killTask(mesos:encode_msg(TaskId)).
+
 scheduler_reviveOffers() ->
     nif_scheduler_reviveOffers().
-scheduler_sendFrameworkMessage(A,B,C) ->
-    nif_scheduler_sendFrameworkMessage(A,B,C).
+
+scheduler_sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(ExecuterId, 'ExecutorID'),
+                                                                is_record(SlaveId, 'SlaveID'),
+                                                                is_list(Data)->
+    nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
+
+
+% nif functions
 
 nif_scheduler_init(_, _, _,_)->
     not_loaded(?LINE).

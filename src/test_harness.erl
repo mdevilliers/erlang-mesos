@@ -7,7 +7,7 @@
 start()->
 
 	Master = "127.0.1.1:5050",
-	Message = mesos:encode_msg( #'FrameworkInfo'{user="Mark", name="xxxx"}),
+	Message = #'FrameworkInfo'{user="Mark", name="xxxx"},
 	Pid = self(),
 
 	ok = erlang_mesos:scheduler_init( Pid, Message, Master),
@@ -17,8 +17,8 @@ stop() ->
 	{ok,_Status} = erlang_mesos:scheduler_stop(1).
 
 declineOffer(OfferIdentifer) ->
-	OfferId = mesos:encode_msg( #'OfferID'{value=OfferIdentifer}),
-	Filters = mesos:encode_msg( #'Filters'{refuse_seconds=5}),
+	OfferId = #'OfferID'{value=OfferIdentifer},
+	Filters = #'Filters'{refuse_seconds=5},
 	{ok,_Status} = erlang_mesos:scheduler_declineOffer( OfferId, Filters).
 
 flush() ->
