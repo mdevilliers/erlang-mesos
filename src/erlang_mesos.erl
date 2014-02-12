@@ -1,6 +1,14 @@
 -module (erlang_mesos).
 
--export ([scheduler_init/4,scheduler_init/3,scheduler_start/0,scheduler_join/0,scheduler_abort/0,scheduler_stop/1,scheduler_declineOffer/2]).
+-export ([scheduler_init/4,
+            scheduler_init/3,
+            scheduler_start/0,
+            scheduler_join/0,
+            scheduler_abort/0,
+            scheduler_stop/1,
+            scheduler_declineOffer/2,
+            scheduler_killTask/1]).
+
 -on_load(init/0).
 
 -define(APPNAME, erlang_mesos).
@@ -20,6 +28,9 @@ scheduler_stop(_) ->
     not_loaded(?LINE).
 scheduler_declineOffer(_,_)->
     not_loaded(?LINE).
+scheduler_killTask(_) ->
+    not_loaded(?LINE).
+
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of

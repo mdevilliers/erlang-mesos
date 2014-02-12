@@ -203,7 +203,7 @@ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
     }
 }
 
- SchedulerDriverStatus declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters)
+SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters)
  {
     assert(state.driver != NULL);
     OfferID offerid_pb;
@@ -216,6 +216,18 @@ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
     return driver->declineOffer(offerid_pb,
                               filter_pb);
  }
+
+
+SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId)
+{
+    assert(state.driver != NULL);
+    TaskID taskid_pb;
+
+    deserialize<TaskID>(taskid_pb,taskId);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->killTask(taskid_pb);
+}
 
 void CScheduler::registered(SchedulerDriver* driver,
                           const FrameworkID& frameworkId,
