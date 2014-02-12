@@ -25,7 +25,7 @@ typedef struct state_t* state_ptr;
 extern "C" {
 #endif
 
-  SchedulerPtrPair scheduler_init( ErlNifPid* pid, ErlNifBinary* info, const char* master, int credentialssupplied, ErlNifBinary* credentials);
+  SchedulerPtrPair scheduler_init(ErlNifPid* pid, ErlNifBinary* info, const char* master, int credentialssupplied, ErlNifBinary* credentials);
   SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
@@ -34,7 +34,7 @@ extern "C" {
   SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId);
   SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, ErlNifBinary* executorId, ErlNifBinary* slaveId, const char* data);
-
+ // SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state,const std::vector<Request>& requests);
 /*
   virtual Status requestResources(const std::vector<Request>& requests);
   virtual Status launchTasks(const OfferID& offerId,

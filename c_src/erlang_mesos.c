@@ -113,8 +113,6 @@ nif_scheduler_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	return get_return_value_from_status(env, status);
 }
 
-
-
 static ERL_NIF_TERM
 nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -128,7 +126,16 @@ nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	}
 	
 	SchedulerDriverStatus status =  scheduler_abort( state->scheduler_state );
-	return get_return_value_from_status(env, status);
+	
+	if(status == 3){ // DRIVER_ABORTED
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							get_atom_from_status(env, status));
+	}else{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							get_atom_from_status(env, status));
+	}
 }
 
 static ERL_NIF_TERM
@@ -164,11 +171,11 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 		state->initilised = 0;
 		return enif_make_tuple2(env, 
 							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+							get_atom_from_status(env, status));
 	}else{
 		return enif_make_tuple2(env, 
 							enif_make_atom(env, "error"), 
-							enif_make_int(env, status));
+							get_atom_from_status(env, status));
 	}
 }
 
@@ -288,16 +295,16 @@ nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
 }
 
 static ErlNifFunc nif_funcs[] = {
-	{"scheduler_init", 3, nif_scheduler_init},
-	{"scheduler_init", 4, nif_scheduler_init},
-	{"scheduler_start", 0, nif_scheduler_start},
-	{"scheduler_join", 0, nif_scheduler_join},
-	{"scheduler_abort", 0, nif_scheduler_abort},
-	{"scheduler_stop", 1, nif_scheduler_stop},
-	{"scheduler_declineOffer", 2,nif_scheduler_declineOffer},
-	{"scheduler_killTask", 1,nif_scheduler_killTask},
-	{"scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},
-	{"scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage}
+	{"nif_scheduler_init", 3, nif_scheduler_init},
+	{"nif_scheduler_init", 4, nif_scheduler_init},
+	{"nif_scheduler_start", 0, nif_scheduler_start},
+	{"nif_scheduler_join", 0, nif_scheduler_join},
+	{"nif_scheduler_abort", 0, nif_scheduler_abort},
+	{"nif_scheduler_stop", 1, nif_scheduler_stop},
+	{"nif_scheduler_declineOffer", 2,nif_scheduler_declineOffer},
+	{"nif_scheduler_killTask", 1,nif_scheduler_killTask},
+	{"nif_scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},
+	{"nif_scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);

@@ -16,25 +16,46 @@
 -define(APPNAME, erlang_mesos).
 -define(LIBNAME, erlang_mesos).
 
-scheduler_init(_, _, _,_)->
-    not_loaded(?LINE).
-scheduler_init(_, _,_)->
-    not_loaded(?LINE).
+scheduler_init(A, B, C, D)->
+    nif_scheduler_init(A, B, C, D).
+scheduler_init(A, B, C)->
+    nif_scheduler_init(A, B, C).
 scheduler_start() ->
-    not_loaded(?LINE).
+    nif_scheduler_start().
 scheduler_join() ->
-    not_loaded(?LINE).
+    nif_scheduler_join().
 scheduler_abort() ->
-    not_loaded(?LINE).
-scheduler_stop(_) ->
-    not_loaded(?LINE).
-scheduler_declineOffer(_,_)->
-    not_loaded(?LINE).
-scheduler_killTask(_) ->
-    not_loaded(?LINE).
+   nif_scheduler_abort().
+scheduler_stop(A) ->
+    nif_scheduler_stop(A).
+scheduler_declineOffer(A,B)->
+    nif_scheduler_declineOffer(A,B).
+scheduler_killTask(A) ->
+    nif_scheduler_killTask(A).
 scheduler_reviveOffers() ->
+    nif_scheduler_reviveOffers().
+scheduler_sendFrameworkMessage(A,B,C) ->
+    nif_scheduler_sendFrameworkMessage(A,B,C).
+
+nif_scheduler_init(_, _, _,_)->
     not_loaded(?LINE).
-scheduler_sendFrameworkMessage(_,_,_) ->
+nif_scheduler_init(_, _,_)->
+    not_loaded(?LINE).
+nif_scheduler_start() ->
+    not_loaded(?LINE).
+nif_scheduler_join() ->
+    not_loaded(?LINE).
+nif_scheduler_abort() ->
+    not_loaded(?LINE).
+nif_scheduler_stop(_) ->
+    not_loaded(?LINE).
+nif_scheduler_declineOffer(_,_)->
+    not_loaded(?LINE).
+nif_scheduler_killTask(_) ->
+    not_loaded(?LINE).
+nif_scheduler_reviveOffers() ->
+    not_loaded(?LINE).
+nif_scheduler_sendFrameworkMessage(_,_,_) ->
     not_loaded(?LINE).
 
 
