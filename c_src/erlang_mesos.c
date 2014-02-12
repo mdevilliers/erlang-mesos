@@ -8,6 +8,7 @@ static int
 load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
 	state_ptr state = (state_ptr) enif_alloc(sizeof(struct state_t));
+	state->initilised = 0;
     *priv = (void*) state;
     return 0;
 }
@@ -66,7 +67,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 0, &credentials_binary);
 	}
-
+    state->initilised = 1;
 	return enif_make_atom(env, "ok");
 }
 
@@ -75,7 +76,7 @@ nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -93,9 +94,8 @@ static ERL_NIF_TERM
 nif_scheduler_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	state_ptr state = (state_ptr) enif_priv_data(env);
-	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -108,13 +108,14 @@ nif_scheduler_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 							enif_make_int(env, status));
 }
 
+
+
 static ERL_NIF_TERM
 nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -133,8 +134,7 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	int failover;
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -170,8 +170,7 @@ nif_scheduler_declineOffer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -204,8 +203,7 @@ nif_scheduler_killTask(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -230,8 +228,7 @@ nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
@@ -244,11 +241,6 @@ nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 							enif_make_int(env, status));
 }
 
-/*SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, 
-                                                    ErlNifBinary* executorId, 
-                                                    ErlNifBinary* slaveId, 
-                                                    const char* data)*/
-
 static ERL_NIF_TERM
 nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
@@ -258,8 +250,7 @@ nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
-	//TODO - review this
-	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	if(state->initilised == 0 ) 
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 

@@ -14,7 +14,7 @@ typedef int SchedulerDriverStatus ;
 
 struct state_t
 {
-	//ErlNifMutex*            lock;
+	  int initilised;
     SchedulerPtrPair scheduler_state;
     //ErlNifThreadOpts*   scheduler_worker_thread_options;
     //ErlNifTid* scheduler_worker_thread; 
@@ -42,9 +42,6 @@ extern "C" {
   virtual Status launchTasks(const OfferID& offerId,
                              const std::vector<TaskInfo>& tasks,
                              const Filters& filters = Filters());
-  virtual Status sendFrameworkMessage(const ExecutorID& executorId,
-                                      const SlaveID& slaveId,
-                                      const std::string& data);
   virtual Status reconcileTasks(
       const std::vector<TaskStatus>& statuses);
 */

@@ -10,7 +10,7 @@
 template <class T> 
 ERL_NIF_TERM pb_obj_to_binary(ErlNifEnv *env, const T& obj)  {
     ErlNifBinary res;
-    enif_alloc_binary(obj.ByteSize(), &res); // TODO : do I need to dealloc this?
+    enif_alloc_binary(obj.ByteSize(), &res); // Review : do I need to dealloc this?
     obj.SerializeToArray(res.data, res.size);
     return enif_make_binary(env, &res);
 }
