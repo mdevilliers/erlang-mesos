@@ -29,6 +29,13 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	
+	if(state->initilised == 1) 
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not already been initiated. Call scheduler_stop first.", ERL_NIF_LATIN1));
+	}
+
 	ErlNifPid* pid = (ErlNifPid*) enif_alloc(sizeof(ErlNifPid));
 
 	if(!enif_get_local_pid(env, argv[0], pid))
@@ -157,9 +164,16 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	SchedulerDriverStatus status = scheduler_stop( state->scheduler_state, failover );
 	
-	return enif_make_tuple2(env, 
+	if(status == 4){ // driver_stopped
+		state->initilised = 0;
+		return enif_make_tuple2(env, 
 							enif_make_atom(env, "ok"), 
 							enif_make_int(env, status));
+	}else{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							enif_make_int(env, status));
+	}
 }
 
 static ERL_NIF_TERM
