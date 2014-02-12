@@ -7,7 +7,8 @@
             scheduler_abort/0,
             scheduler_stop/1,
             scheduler_declineOffer/2,
-            scheduler_killTask/1]).
+            scheduler_killTask/1,
+            scheduler_reviveOffers/0]).
 
 -on_load(init/0).
 
@@ -30,7 +31,8 @@ scheduler_declineOffer(_,_)->
     not_loaded(?LINE).
 scheduler_killTask(_) ->
     not_loaded(?LINE).
-
+scheduler_reviveOffers() ->
+    not_loaded(?LINE).
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of

@@ -225,6 +225,25 @@ nif_scheduler_killTask(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 							enif_make_int(env, status));
 }
 
+static ERL_NIF_TERM
+nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	//TODO - review this
+	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
+	}
+	
+	SchedulerDriverStatus status =  scheduler_reviveOffers( state->scheduler_state );
+	return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							enif_make_int(env, status));
+}
+
 static ErlNifFunc nif_funcs[] = {
 	{"scheduler_init", 3, nif_scheduler_init},
 	{"scheduler_init", 4, nif_scheduler_init},
@@ -233,7 +252,8 @@ static ErlNifFunc nif_funcs[] = {
 	{"scheduler_abort", 0, nif_scheduler_abort},
 	{"scheduler_stop", 1, nif_scheduler_stop},
 	{"scheduler_declineOffer", 2,nif_scheduler_declineOffer},
-	{"scheduler_killTask", 2,nif_scheduler_killTask}
+	{"scheduler_killTask", 2,nif_scheduler_killTask},
+	{"scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);

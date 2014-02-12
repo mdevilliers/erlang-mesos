@@ -217,7 +217,6 @@ SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinar
                               filter_pb);
  }
 
-
 SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId)
 {
     assert(state.driver != NULL);
@@ -227,6 +226,14 @@ SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* t
 
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->killTask(taskid_pb);
+}
+
+SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state)
+{
+    assert(state.driver != NULL);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->reviveOffers();
 }
 
 void CScheduler::registered(SchedulerDriver* driver,
