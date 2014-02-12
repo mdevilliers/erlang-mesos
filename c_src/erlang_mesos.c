@@ -4,6 +4,37 @@
 
 #define MAXBUFLEN 1024
 
+//heler method to return status to erlang
+ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, SchedulerDriverStatus status)
+{
+	if(status == 1) //DRIVER_NOT_STARTED
+	{	
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							enif_make_atom(env, "driver_not_started"));
+
+	}else if(status == 2) // DRIVER_RUNNING
+	{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							enif_make_atom(env, "driver_running"));
+	}else if(status == 3) // DRIVER_ABORTED
+	{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							enif_make_atom(env, "driver_aborted"));
+	}else if(status == 4) //DRIVER_STOPPED
+	{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							enif_make_atom(env, "driver_stopped"));
+	}else{
+		return enif_make_tuple2(env, 
+							enif_make_atom(env, "error"), 
+							enif_make_atom(env, "unknown"));
+	}
+}
+
 static int
 load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
@@ -92,9 +123,7 @@ nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	
 	SchedulerDriverStatus status = scheduler_start( state->scheduler_state );
 
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ERL_NIF_TERM
@@ -110,9 +139,8 @@ nif_scheduler_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	}
 	
 	SchedulerDriverStatus status =  scheduler_join( state->scheduler_state );
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+
+	return get_return_value_from_status(env, status);
 }
 
 
@@ -130,9 +158,7 @@ nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	}
 	
 	SchedulerDriverStatus status =  scheduler_abort( state->scheduler_state );
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ERL_NIF_TERM
@@ -205,9 +231,7 @@ nif_scheduler_declineOffer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
 	SchedulerDriverStatus status = scheduler_declineOffer( state->scheduler_state, &offerId_binary, &filters_binary );
 
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ERL_NIF_TERM
@@ -232,9 +256,7 @@ nif_scheduler_killTask(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
 	SchedulerDriverStatus status = scheduler_killTask( state->scheduler_state, &taskId_binary);
 
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ERL_NIF_TERM
@@ -250,9 +272,7 @@ nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	}
 	
 	SchedulerDriverStatus status =  scheduler_reviveOffers( state->scheduler_state );
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ERL_NIF_TERM
@@ -294,9 +314,7 @@ nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
 					                                                    &executorId_binary, 
 					                                                    &slaveId_binary, 
 					                                                    data);
-	return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_int(env, status));
+	return get_return_value_from_status(env, status);
 }
 
 static ErlNifFunc nif_funcs[] = {

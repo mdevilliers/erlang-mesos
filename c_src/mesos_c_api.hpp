@@ -16,8 +16,6 @@ struct state_t
 {
 	  int initilised;
     SchedulerPtrPair scheduler_state;
-    //ErlNifThreadOpts*   scheduler_worker_thread_options;
-    //ErlNifTid* scheduler_worker_thread; 
 };
 
 typedef struct state_t* state_ptr;
