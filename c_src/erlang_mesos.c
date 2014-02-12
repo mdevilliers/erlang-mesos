@@ -244,6 +244,56 @@ nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 							enif_make_int(env, status));
 }
 
+/*SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, 
+                                                    ErlNifBinary* executorId, 
+                                                    ErlNifBinary* slaveId, 
+                                                    const char* data)*/
+
+static ERL_NIF_TERM
+nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
+
+	ErlNifBinary executorId_binary;
+	ErlNifBinary slaveId_binary;
+	char data[MAXBUFLEN];
+
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	//TODO - review this
+	if(state->scheduler_state.scheduler == NULL || state->scheduler_state.driver == NULL)
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
+	}
+	if (!enif_inspect_binary(env, argv[0], &executorId_binary)) 
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted ExecutorID", ERL_NIF_LATIN1));
+	}
+	if (!enif_inspect_binary(env, argv[1], &slaveId_binary)) 
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted SlaveID", ERL_NIF_LATIN1));
+	}
+	//REVIEW : buffer length
+	if(!enif_get_string(env, argv[2], data , MAXBUFLEN, ERL_NIF_LATIN1 ))
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted data parameter", ERL_NIF_LATIN1));
+	}
+
+	SchedulerDriverStatus status = scheduler_sendFrameworkMessage( state->scheduler_state , 
+					                                                    &executorId_binary, 
+					                                                    &slaveId_binary, 
+					                                                    data);
+	return enif_make_tuple2(env, 
+							enif_make_atom(env, "ok"), 
+							enif_make_int(env, status));
+}
+
 static ErlNifFunc nif_funcs[] = {
 	{"scheduler_init", 3, nif_scheduler_init},
 	{"scheduler_init", 4, nif_scheduler_init},
@@ -252,8 +302,9 @@ static ErlNifFunc nif_funcs[] = {
 	{"scheduler_abort", 0, nif_scheduler_abort},
 	{"scheduler_stop", 1, nif_scheduler_stop},
 	{"scheduler_declineOffer", 2,nif_scheduler_declineOffer},
-	{"scheduler_killTask", 2,nif_scheduler_killTask},
-	{"scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers}
+	{"scheduler_killTask", 1,nif_scheduler_killTask},
+	{"scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},
+	{"scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);

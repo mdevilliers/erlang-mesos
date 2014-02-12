@@ -236,6 +236,27 @@ SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state)
     return driver->reviveOffers();
 }
 
+SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, 
+                                                    ErlNifBinary* executorId, 
+                                                    ErlNifBinary* slaveId, 
+                                                    const char* data)
+{
+    assert(state.driver != NULL);
+    ExecutorID executorid_pb;
+    SlaveID slaveid_pb;
+
+    deserialize<ExecutorID>(executorid_pb,executorId);
+    deserialize<SlaveID>(slaveid_pb,slaveId);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->sendFrameworkMessage(executorid_pb, slaveid_pb, data);
+}
+
+/** 
+  Callbacks
+
+**/
+
 void CScheduler::registered(SchedulerDriver* driver,
                           const FrameworkID& frameworkId,
                           const MasterInfo& masterInfo)

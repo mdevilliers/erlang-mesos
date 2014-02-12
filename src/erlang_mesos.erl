@@ -8,7 +8,8 @@
             scheduler_stop/1,
             scheduler_declineOffer/2,
             scheduler_killTask/1,
-            scheduler_reviveOffers/0]).
+            scheduler_reviveOffers/0,
+            scheduler_sendFrameworkMessage/3]).
 
 -on_load(init/0).
 
@@ -33,6 +34,9 @@ scheduler_killTask(_) ->
     not_loaded(?LINE).
 scheduler_reviveOffers() ->
     not_loaded(?LINE).
+scheduler_sendFrameworkMessage(_,_,_) ->
+    not_loaded(?LINE).
+
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
