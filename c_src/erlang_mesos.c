@@ -1,39 +1,9 @@
 #include <stdio.h>
 #include "erl_nif.h"
+#include "erlang_mesos_util.c"
 #include "mesos_c_api.hpp"    
 
 #define MAXBUFLEN 1024
-
-//heler method to return status to erlang
-ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, SchedulerDriverStatus status)
-{
-	if(status == 1) //DRIVER_NOT_STARTED
-	{	
-		return enif_make_tuple2(env, 
-							enif_make_atom(env, "error"), 
-							enif_make_atom(env, "driver_not_started"));
-
-	}else if(status == 2) // DRIVER_RUNNING
-	{
-		return enif_make_tuple2(env, 
-							enif_make_atom(env, "ok"), 
-							enif_make_atom(env, "driver_running"));
-	}else if(status == 3) // DRIVER_ABORTED
-	{
-		return enif_make_tuple2(env, 
-							enif_make_atom(env, "error"), 
-							enif_make_atom(env, "driver_aborted"));
-	}else if(status == 4) //DRIVER_STOPPED
-	{
-		return enif_make_tuple2(env, 
-							enif_make_atom(env, "error"), 
-							enif_make_atom(env, "driver_stopped"));
-	}else{
-		return enif_make_tuple2(env, 
-							enif_make_atom(env, "error"), 
-							enif_make_atom(env, "unknown"));
-	}
-}
 
 static int
 load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
