@@ -261,7 +261,7 @@ SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifB
   assert(request != NULL);
 
   vector<Request> requests;
-  if(! deserialize<Request>( requests, request, size)) {return DRIVER_ABORTED;};
+  if(! deserialize<Request>( requests, request)) {return DRIVER_ABORTED;};
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
   return driver->requestResources(requests);
@@ -269,8 +269,14 @@ SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifB
 
 SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus)
 {
+  assert(state.driver != NULL);
+  assert(taskStatus != NULL);
 
+  vector<TaskStatus> taskStatus_;
+  if(! deserialize<TaskStatus>( taskStatus_, taskStatus)) {return DRIVER_ABORTED;};
 
+  MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+  return driver->reconcileTasks(taskStatus_);
 }
 
 /** 

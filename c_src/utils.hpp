@@ -1,9 +1,6 @@
 #ifndef __MESOS_C_UTILS_HPP__
 #define __MESOS_C_UTILS_HPP__
 
-//#include <string>
-//#include <vector>
-
 #include "mesos/mesos.pb.h"
 #include "erl_nif.h"
 

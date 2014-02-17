@@ -12,7 +12,8 @@
             scheduler_killTask/1,
             scheduler_reviveOffers/0,
             scheduler_sendFrameworkMessage/3,
-            scheduler_requestResources/1]).
+            scheduler_requestResources/1,
+            scheduler_reconcileTasks/1]).
 
 -on_load(init/0).
 
@@ -59,10 +60,13 @@ scheduler_sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(Execut
                                                                 is_list(Data)->
     nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
 
-scheduler_requestResources(Request) ->
-    Encoded = encode_array(Request, []),
-    io:format("scheduler_requestResources : ~p~n", [Encoded]),
+scheduler_requestResources(Requests) ->
+    Encoded = encode_array(Requests, []),
     nif_scheduler_requestResources(Encoded).
+
+scheduler_reconcileTasks(TaskStatuss) ->
+    Encoded = encode_array(TaskStatuss, []),
+    nif_scheduler_reconcileTasks(Encoded).
 
 % nif functions
 
@@ -87,6 +91,8 @@ nif_scheduler_reviveOffers() ->
 nif_scheduler_sendFrameworkMessage(_,_,_) ->
     not_loaded(?LINE).
 nif_scheduler_requestResources(_) ->
+    not_loaded(?LINE).
+nif_scheduler_reconcileTasks(_) ->
     not_loaded(?LINE).
 
 init() ->

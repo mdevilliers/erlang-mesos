@@ -37,3 +37,22 @@ static ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, SchedulerDriver
 							get_atom_from_status(env, status));
 	}
 }
+/*
+static int iterate_array_of_binary_objects(ErlNifEnv* env, ERL_NIF_TERM term, ErlNifBinary* binary_arr )
+{
+	ERL_NIF_TERM head, tail;
+	tail = term;
+
+	int i = 0;
+	while(enif_get_list_cell(env, tail, &head, &tail))
+    {
+        ErlNifBinary request_binary;
+        if(!enif_inspect_binary(env, head, &request_binary)) 
+        {
+        	return 0;
+        }
+
+		binary_arr[i++] = request_binary;
+    }
+    return 1;
+}*/
