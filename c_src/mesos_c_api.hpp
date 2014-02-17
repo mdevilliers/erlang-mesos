@@ -34,7 +34,7 @@ extern "C" {
   SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId);
   SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, ErlNifBinary* executorId, ErlNifBinary* slaveId, const char* data);
- // SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state,const std::vector<Request>& requests);
+  SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifBinary* request);
 /*
   virtual Status requestResources(const std::vector<Request>& requests);
   virtual Status launchTasks(const OfferID& offerId,

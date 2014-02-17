@@ -14,6 +14,8 @@
 using namespace mesos;
 using namespace std;
 
+#define DRIVER_ABORTED 3;
+
 class CScheduler : public Scheduler
 {
 public:
@@ -147,7 +149,7 @@ SchedulerPtrPair scheduler_init(ErlNifPid* pid,
     if(credentialssupplied)
     {
 
-      deserialize<Credential>(credentials_pb,credentials);  
+      deserialize<Credential>(credentials_pb,credentials);
 
       driver = new MesosSchedulerDriver(
                                        scheduler,
@@ -209,8 +211,8 @@ SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinar
     OfferID offerid_pb;
     Filters filter_pb;
 
-    deserialize<OfferID>(offerid_pb,offerId);
-    deserialize<Filters>(filter_pb,filters);
+    if(!deserialize<OfferID>(offerid_pb,offerId)) { return DRIVER_ABORTED; };
+    if(!deserialize<Filters>(filter_pb,filters)) { return DRIVER_ABORTED; };
 
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->declineOffer(offerid_pb,
@@ -222,7 +224,7 @@ SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* t
     assert(state.driver != NULL);
     TaskID taskid_pb;
 
-    deserialize<TaskID>(taskid_pb,taskId);
+    if(!deserialize<TaskID>(taskid_pb,taskId)) { return DRIVER_ABORTED; };
 
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->killTask(taskid_pb);
@@ -245,11 +247,23 @@ SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state,
     ExecutorID executorid_pb;
     SlaveID slaveid_pb;
 
-    deserialize<ExecutorID>(executorid_pb,executorId);
-    deserialize<SlaveID>(slaveid_pb,slaveId);
+    if(!deserialize<ExecutorID>(executorid_pb,executorId)) { return DRIVER_ABORTED; };
+    if(!deserialize<SlaveID>(slaveid_pb,slaveId)) { return DRIVER_ABORTED; };
 
     MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
     return driver->sendFrameworkMessage(executorid_pb, slaveid_pb, data);
+}
+
+SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifBinary* request)
+{
+  assert(state.driver != NULL);
+  assert(request != NULL);
+
+  vector<Request> requests;
+  if(! deserialize2<Request>( requests, request, size)) {return DRIVER_ABORTED;};
+
+  MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+  return driver->requestResources(requests);
 }
 
 /** 

@@ -294,6 +294,59 @@ nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
 	return get_return_value_from_status(env, status);
 }
 
+static ERL_NIF_TERM
+nif_scheduler_requestResources(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+	unsigned int length ;
+	ERL_NIF_TERM head, tail;
+
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	if(state->initilised == 0 ) 
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Scheduler has not been initiated. Call scheduler_init first.", ERL_NIF_LATIN1));
+	}
+
+	if(!enif_is_list(env, argv[0])) 
+		{
+			return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted array of Request objects", ERL_NIF_LATIN1));
+		};
+
+	tail = argv[0];
+
+	if(!enif_get_list_length(env, argv[0], &length))
+	{
+		return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted array of Request objects", ERL_NIF_LATIN1));
+
+	}
+	
+	ErlNifBinary binary_arr[length];
+
+	int i = 0;
+	while(enif_get_list_cell(env, tail, &head, &tail))
+	    {
+	        ErlNifBinary request_binary;
+	        if(!enif_inspect_binary(env, head, &request_binary)) 
+	        {
+	        	return enif_make_tuple2(env, 
+					enif_make_atom(env, "argument_error"), 
+					enif_make_string(env, "Invalid or corrupted request objects", ERL_NIF_LATIN1));
+	        }
+
+			binary_arr[i++] = request_binary;
+	    }
+
+	SchedulerDriverStatus status =  scheduler_requestResources( state->scheduler_state, &binary_arr, length);
+	return get_return_value_from_status(env, status);
+}
+
+
 static ErlNifFunc nif_funcs[] = {
 	{"nif_scheduler_init", 3, nif_scheduler_init},
 	{"nif_scheduler_init", 4, nif_scheduler_init},
@@ -304,7 +357,8 @@ static ErlNifFunc nif_funcs[] = {
 	{"nif_scheduler_declineOffer", 2,nif_scheduler_declineOffer},
 	{"nif_scheduler_killTask", 1,nif_scheduler_killTask},
 	{"nif_scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},
-	{"nif_scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage}
+	{"nif_scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage},
+	{"nif_scheduler_requestResources",1, nif_scheduler_requestResources}
 };
 
 ERL_NIF_INIT(erlang_mesos, nif_funcs, load, NULL, NULL, unload);

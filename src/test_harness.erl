@@ -2,7 +2,7 @@
 
 -include_lib("include/mesos.hrl").
 
--export ([start/0, flush/0, stop/0, declineOffer/1]).
+-export ([start/0, flush/0, stop/0, declineOffer/1,requestResources/0]).
 
 start()->
 
@@ -19,7 +19,18 @@ stop() ->
 declineOffer(OfferIdentifer) ->
 	OfferId = #'OfferID'{value=OfferIdentifer},
 	Filters = #'Filters'{refuse_seconds=5},
-	{ok,_Status} = erlang_mesos:scheduler_declineOffer( OfferId, Filters).
+	Result = erlang_mesos:scheduler_declineOffer( OfferId, Filters),
+	Result.
+
+requestResources() ->
+	Scalar = mesos:enum_symbol_by_value('Value.Type', 0),
+
+	Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
+	Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
+	Request = #'Request'{resources = [Resource1,Resource2]},
+	io:format("~p~n", [Request]),
+	erlang_mesos:scheduler_requestResources([Request,Request]).
+
 
 flush() ->
 	receive		

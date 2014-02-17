@@ -11,7 +11,8 @@
             scheduler_declineOffer/2,
             scheduler_killTask/1,
             scheduler_reviveOffers/0,
-            scheduler_sendFrameworkMessage/3]).
+            scheduler_sendFrameworkMessage/3,
+            scheduler_requestResources/1]).
 
 -on_load(init/0).
 
@@ -58,6 +59,10 @@ scheduler_sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(Execut
                                                                 is_list(Data)->
     nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
 
+scheduler_requestResources(Request) ->
+    Encoded = encode_array(Request, []),
+    io:format("scheduler_requestResources : ~p~n", [Encoded]),
+    nif_scheduler_requestResources(Encoded).
 
 % nif functions
 
@@ -81,7 +86,8 @@ nif_scheduler_reviveOffers() ->
     not_loaded(?LINE).
 nif_scheduler_sendFrameworkMessage(_,_,_) ->
     not_loaded(?LINE).
-
+nif_scheduler_requestResources(_) ->
+    not_loaded(?LINE).
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
@@ -99,3 +105,8 @@ init() ->
 
 not_loaded(Line) ->
     exit({not_loaded, [{module, ?MODULE}, {line, Line}]}).
+
+% helpers
+encode_array([], Acc) -> Acc;
+encode_array([H|T], Acc) -> 
+    encode_array(T, [mesos:encode_msg(H) | Acc]).
