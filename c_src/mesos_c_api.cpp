@@ -244,6 +244,7 @@ SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state,
                                                     const char* data)
 {
     assert(state.driver != NULL);
+
     ExecutorID executorid_pb;
     SlaveID slaveid_pb;
 
@@ -260,10 +261,16 @@ SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifB
   assert(request != NULL);
 
   vector<Request> requests;
-  if(! deserialize2<Request>( requests, request, size)) {return DRIVER_ABORTED;};
+  if(! deserialize<Request>( requests, request, size)) {return DRIVER_ABORTED;};
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
   return driver->requestResources(requests);
+}
+
+SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus)
+{
+
+
 }
 
 /** 

@@ -31,7 +31,7 @@ template<typename T> inline bool deserialize(T& ret, ErlNifBinary* obj) {
   return deserialize<T>(ret, obj->data, obj->size);
 }
 
-template<typename T> inline bool deserialize2(
+template<typename T> inline bool deserialize(
       std::vector<T>& ret,
       ErlNifBinary* ent)
   {
