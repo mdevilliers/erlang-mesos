@@ -136,7 +136,9 @@ SchedulerPtrPair scheduler_init(ErlNifPid* pid,
                                 int credentialssupplied,
                                 ErlNifBinary* credentials)
 {
-    //fprintf(stderr, "%s \n" , "scheduler_init" );
+    assert(info != NULL); 
+    assert(master != NULL); 
+
     SchedulerPtrPair ret ;
     Credential credentials_pb ;
 
@@ -208,6 +210,8 @@ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
 SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters)
  {
     assert(state.driver != NULL);
+    assert(offerId != NULL);
+
     OfferID offerid_pb;
     Filters filter_pb;
 
@@ -222,6 +226,7 @@ SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinar
 SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId)
 {
     assert(state.driver != NULL);
+    assert(taskId != NULL);  
     TaskID taskid_pb;
 
     if(!deserialize<TaskID>(taskid_pb,taskId)) { return DRIVER_ABORTED; };
@@ -244,6 +249,9 @@ SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state,
                                                     const char* data)
 {
     assert(state.driver != NULL);
+    assert(executorId != NULL);
+    assert(slaveId != NULL);
+    assert(data != NULL);    
 
     ExecutorID executorid_pb;
     SlaveID slaveid_pb;
@@ -260,11 +268,11 @@ SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifB
   assert(state.driver != NULL);
   assert(request != NULL);
 
-  vector<Request> requests;
-  if(! deserialize<Request>( requests, request)) {return DRIVER_ABORTED;};
+  vector<Request> requests_;
+  if(! deserialize<Request>( requests_, request)) {return DRIVER_ABORTED;};
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
-  return driver->requestResources(requests);
+  return driver->requestResources(requests_);
 }
 
 SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus)
@@ -277,6 +285,27 @@ SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBin
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
   return driver->reconcileTasks(taskStatus_);
+}
+
+SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, 
+                                              ErlNifBinary* offerId, 
+                                              ErlNifBinary* taskInfos, 
+                                              ErlNifBinary* filters)
+{
+  assert(state.driver != NULL);
+  assert(offerId != NULL);
+  assert(taskInfos != NULL);
+
+  OfferID offerid_pb;
+  vector<TaskInfo> taskInfo_;
+  Filters filter_pb;
+
+  if(!deserialize<OfferID>(offerid_pb,offerId)) { return DRIVER_ABORTED; };
+  if(! deserialize<TaskInfo>( taskInfo_, taskInfos)) {return DRIVER_ABORTED;};
+  if(!deserialize<Filters>(filter_pb,filters)) { return DRIVER_ABORTED; };
+
+  MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+  return driver->launchTasks(offerid_pb, taskInfo_,filter_pb);
 }
 
 /** 

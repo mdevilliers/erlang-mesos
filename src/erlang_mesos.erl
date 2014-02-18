@@ -8,12 +8,15 @@
             scheduler_join/0,
             scheduler_abort/0,
             scheduler_stop/1,
+            scheduler_declineOffer/1,
             scheduler_declineOffer/2,
             scheduler_killTask/1,
             scheduler_reviveOffers/0,
             scheduler_sendFrameworkMessage/3,
             scheduler_requestResources/1,
-            scheduler_reconcileTasks/1]).
+            scheduler_reconcileTasks/1,
+            scheduler_launchTasks/2,
+            scheduler_launchTasks/3]).
 
 -on_load(init/0).
 
@@ -45,8 +48,12 @@ scheduler_stop(Failover) when   is_integer(Failover),
                                 Failover < 2 ->
     nif_scheduler_stop(Failover).
 
+scheduler_declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
+    Filter = #'Filters'{},
+    nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
+
 scheduler_declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
-                                            is_record(Filter, 'Filters')->
+                                            is_record(Filter, 'Filters') ->
     nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
 
 scheduler_killTask(TaskId) when is_record(TaskId,'TaskID')->
@@ -60,13 +67,25 @@ scheduler_sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(Execut
                                                                 is_list(Data)->
     nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
 
-scheduler_requestResources(Requests) ->
-    Encoded = encode_array(Requests, []),
-    nif_scheduler_requestResources(Encoded).
+scheduler_requestResources(Requests) when is_list(Requests) ->
+    EncodedRequests = encode_array(Requests, []),
+    nif_scheduler_requestResources(EncodedRequests).
 
-scheduler_reconcileTasks(TaskStatuss) ->
-    Encoded = encode_array(TaskStatuss, []),
-    nif_scheduler_reconcileTasks(Encoded).
+scheduler_reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
+    EncodedTaskStatus = encode_array(TaskStatuss, []),
+    nif_scheduler_reconcileTasks(EncodedTaskStatus).
+
+scheduler_launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
+                                                         is_list(TaskInfos) ->
+    EncodedTaskInfos = encode_array(TaskInfos, []),
+    Filter = #'Filters'{},
+    nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
+
+scheduler_launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'), 
+                                                         is_list(TaskInfos),
+                                                         is_record(Filter, 'Filters') ->
+    EncodedTaskInfos = encode_array(TaskInfos, []),
+    nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
 
 % nif functions
 
@@ -93,6 +112,8 @@ nif_scheduler_sendFrameworkMessage(_,_,_) ->
 nif_scheduler_requestResources(_) ->
     not_loaded(?LINE).
 nif_scheduler_reconcileTasks(_) ->
+    not_loaded(?LINE).
+nif_scheduler_launchTasks(_,_,_) ->
     not_loaded(?LINE).
 
 init() ->

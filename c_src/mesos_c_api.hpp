@@ -41,8 +41,7 @@ extern "C" {
   virtual Status launchTasks(const OfferID& offerId,
                              const std::vector<TaskInfo>& tasks,
                              const Filters& filters = Filters());
-  virtual Status reconcileTasks(
-      const std::vector<TaskStatus>& statuses);
+ 
 */
 #ifdef __cplusplus
 }
