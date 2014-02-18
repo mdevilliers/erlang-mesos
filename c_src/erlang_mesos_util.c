@@ -1,5 +1,5 @@
 #include "erl_nif.h"
-#include "mesos_c_api.hpp"
+#include "scheduler_c_api.hpp"
 
 
 static ERL_NIF_TERM get_atom_from_status(ErlNifEnv* env, SchedulerDriverStatus status)

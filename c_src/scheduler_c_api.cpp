@@ -4,7 +4,7 @@
 
 #include "erl_nif.h"
 
-#include "mesos_c_api.hpp"
+#include "scheduler_c_api.hpp"
 
 #include <mesos/mesos.hpp>
 #include <mesos/scheduler.hpp>

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "erl_nif.h"
 #include "erlang_mesos_util.c"
-#include "mesos_c_api.hpp"    
+#include "scheduler_c_api.hpp"    
 
 #define MAXBUFLEN 1024
 
@@ -298,7 +298,6 @@ static ERL_NIF_TERM
 nif_scheduler_requestResources(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	unsigned int length ;
-	//ERL_NIF_TERM head, tail;
 
 	state_ptr state = (state_ptr) enif_priv_data(env);
 	

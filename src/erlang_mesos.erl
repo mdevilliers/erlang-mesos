@@ -76,7 +76,7 @@ scheduler_reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
     nif_scheduler_reconcileTasks(EncodedTaskStatus).
 
 scheduler_launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
-                                                         is_list(TaskInfos) ->
+                                                is_list(TaskInfos) ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     Filter = #'Filters'{},
     nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
