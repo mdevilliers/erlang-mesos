@@ -1,24 +1,10 @@
 
 
-#ifndef MESOS_API_C_H
-#define MESOS_API_C_H
+#ifndef MESOS_SCHEDULER_API_C_H
+#define MESOS_SCHEDULER_API_C_H
 
 #include "erl_nif.h"
-
-typedef struct {
-  void* scheduler;
-  void* driver;
-} SchedulerPtrPair;
-
-typedef int SchedulerDriverStatus ;
-
-struct state_t
-{
-	  int initilised;
-    SchedulerPtrPair scheduler_state;
-};
-
-typedef struct state_t* state_ptr;
+#include "erlang_mesos.hpp"
 
 #ifdef __cplusplus
 #include <mesos/mesos.hpp>
@@ -41,4 +27,4 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#endif // MESOS_API_C_H
+#endif // MESOS_SCHEDULER_API_C_H

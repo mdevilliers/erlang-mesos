@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "erl_nif.h"
 #include "erlang_mesos_util.c"
+#include "erlang_mesos.hpp" 
+#include "executor_c_api.hpp" 
 #include "scheduler_c_api.hpp"    
 
 #define MAXBUFLEN 1024

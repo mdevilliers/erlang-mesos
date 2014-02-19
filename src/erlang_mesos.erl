@@ -30,8 +30,8 @@ scheduler_init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid),
     nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation, mesos:encode_msg(Credential)).
 
 scheduler_init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
-                                                            is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                            is_list(MasterLocation)->
+                                                        is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                        is_list(MasterLocation)->
     nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation).
 
 scheduler_start() ->
