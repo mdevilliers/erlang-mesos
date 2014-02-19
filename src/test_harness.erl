@@ -10,16 +10,16 @@ start()->
 	Message = #'FrameworkInfo'{user="Mark", name="xxxx"},
 	Pid = self(),
 
-	ok = erlang_mesos:scheduler_init( Pid, Message, Master),
-	{ok,_Status1} = erlang_mesos:scheduler_start().
+	ok = scheduler:init( Pid, Message, Master),
+	{ok,_Status1} = scheduler:start().
 
 stop() ->
-	{ok,_Status} = erlang_mesos:scheduler_stop(1).
+	{ok,_Status} = scheduler:stop(1).
 
 declineOffer(OfferIdentifer) ->
 	OfferId = #'OfferID'{value=OfferIdentifer},
 	Filters = #'Filters'{refuse_seconds=5},
-	Result = erlang_mesos:scheduler_declineOffer( OfferId, Filters),
+	Result = scheduler:declineOffer( OfferId, Filters),
 	Result.
 
 requestResources() ->
@@ -29,7 +29,7 @@ requestResources() ->
 	Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 	Request = #'Request'{resources = [Resource1,Resource2]},
 	io:format("~p~n", [Request]),
-	erlang_mesos:scheduler_requestResources([Request,Request]).
+	erlang_scheduler:requestResources([Request,Request]).
 
 
 flush() ->

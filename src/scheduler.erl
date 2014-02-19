@@ -1,87 +1,87 @@
--module (erlang_mesos).
+-module (scheduler).
 
 -include_lib("include/mesos.hrl").
 
--export ([scheduler_init/4,
-            scheduler_init/3,
-            scheduler_start/0,
-            scheduler_join/0,
-            scheduler_abort/0,
-            scheduler_stop/1,
-            scheduler_declineOffer/1,
-            scheduler_declineOffer/2,
-            scheduler_killTask/1,
-            scheduler_reviveOffers/0,
-            scheduler_sendFrameworkMessage/3,
-            scheduler_requestResources/1,
-            scheduler_reconcileTasks/1,
-            scheduler_launchTasks/2,
-            scheduler_launchTasks/3]).
+-export ([  init/4,
+            init/3,
+            start/0,
+            join/0,
+            abort/0,
+            stop/1,
+            declineOffer/1,
+            declineOffer/2,
+            killTask/1,
+            reviveOffers/0,
+            sendFrameworkMessage/3,
+            requestResources/1,
+            reconcileTasks/1,
+            launchTasks/2,
+            launchTasks/3]).
 
 -on_load(init/0).
 
--define(APPNAME, erlang_mesos).
+-define(APPNAME, scheduler).
 -define(LIBNAME, erlang_mesos).
 
-scheduler_init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid), 
+init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid), 
                                                             is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                             is_list(MasterLocation),
                                                             is_record(Credential,'Credential')->
     nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation, mesos:encode_msg(Credential)).
 
-scheduler_init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
-                                                        is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                        is_list(MasterLocation)->
+init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
+                                                is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                is_list(MasterLocation)->
     nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation).
 
-scheduler_start() ->
+start() ->
     nif_scheduler_start().
 
-scheduler_join() ->
+join() ->
     nif_scheduler_join().
 
-scheduler_abort() ->
+abort() ->
     nif_scheduler_abort().
 
-scheduler_stop(Failover) when   is_integer(Failover), 
+stop(Failover) when   is_integer(Failover), 
                                 Failover > -1, 
                                 Failover < 2 ->
     nif_scheduler_stop(Failover).
 
-scheduler_declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
+declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     Filter = #'Filters'{},
     nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
 
-scheduler_declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
+declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
                                             is_record(Filter, 'Filters') ->
     nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
 
-scheduler_killTask(TaskId) when is_record(TaskId,'TaskID')->
+killTask(TaskId) when is_record(TaskId,'TaskID')->
     nif_scheduler_killTask(mesos:encode_msg(TaskId)).
 
-scheduler_reviveOffers() ->
+reviveOffers() ->
     nif_scheduler_reviveOffers().
 
-scheduler_sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(ExecuterId, 'ExecutorID'),
+sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(ExecuterId, 'ExecutorID'),
                                                                 is_record(SlaveId, 'SlaveID'),
                                                                 is_list(Data)->
     nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
 
-scheduler_requestResources(Requests) when is_list(Requests) ->
+requestResources(Requests) when is_list(Requests) ->
     EncodedRequests = encode_array(Requests, []),
     nif_scheduler_requestResources(EncodedRequests).
 
-scheduler_reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
+reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
     EncodedTaskStatus = encode_array(TaskStatuss, []),
     nif_scheduler_reconcileTasks(EncodedTaskStatus).
 
-scheduler_launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
+launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
                                                 is_list(TaskInfos) ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     Filter = #'Filters'{},
     nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
 
-scheduler_launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'), 
+launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'), 
                                                          is_list(TaskInfos),
                                                          is_record(Filter, 'Filters') ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
