@@ -153,7 +153,7 @@ nif_executor_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 	}
 	
 	//REVIEW : buffer length
-	if(!enif_get_string(env, argv[1], data , MAXBUFLEN, ERL_NIF_LATIN1 ))
+	if(!enif_get_string(env, argv[0], data , MAXBUFLEN, ERL_NIF_LATIN1 ))
 	{
 		return enif_make_tuple2(env, 
 					enif_make_atom(env, "argument_error"), 

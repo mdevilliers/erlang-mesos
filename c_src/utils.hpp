@@ -41,16 +41,5 @@ template<typename T> inline bool deserialize(
     return true;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
 #endif
+  

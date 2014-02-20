@@ -4,7 +4,6 @@
 #define MESOS_SCHEDULER_API_C_H
 
 #include "erl_nif.h"
-#include "erlang_mesos.hpp"
 
 #ifdef __cplusplus
 #include <mesos/mesos.hpp>

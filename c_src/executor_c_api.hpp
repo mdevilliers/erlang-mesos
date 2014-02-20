@@ -5,9 +5,10 @@
 #include "erl_nif.h"
 #include "erlang_mesos.hpp"
 
-
 #ifdef __cplusplus
-#include <mesos/mesos.hpp>
+
+#include "erl_nif.h"
+
 extern "C" {
 #endif
 
