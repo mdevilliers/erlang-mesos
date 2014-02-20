@@ -166,6 +166,18 @@ ExecutorDriverStatus executor_sendStatusUpdate(ExecutorPtrPair state, ErlNifBina
     return driver->sendStatusUpdate(taskStatus_pb);
 }
 
+void executor_destroy(ExecutorPtrPair state)
+{
+    assert(state.driver != NULL);
+    assert(state.executor != NULL);
+
+    MesosExecutorDriver* driver = reinterpret_cast<MesosExecutorDriver*>(state.driver);
+    CExecutor* executor = reinterpret_cast<CExecutor*>(state.executor);
+
+    delete driver;
+    delete executor;
+}
+
 // callbacks
 void CExecutor::registered(ExecutorDriver* driver,
                       const ExecutorInfo& executorInfo,

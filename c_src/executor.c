@@ -190,6 +190,21 @@ nif_executor_sendStatusUpdate(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
 	return get_return_value_from_status(env, status);
 }
 
+static ERL_NIF_TERM
+nif_executor_destroy(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
+
+	state_ptr state = (state_ptr) enif_priv_data(env);
+	
+	if(state->initilised == 0 ) 
+	{
+		return enif_make_tuple2(env, 
+			enif_make_atom(env, "state_error"), 
+			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+	}
+	executor_destroy(state->executor_state);
+	state->initilised = 0;
+	return enif_make_atom(env, "ok");
+}
 
 static ErlNifFunc executor_nif_funcs[] = {
 	{"nif_executor_init", 1, nif_executor_init},
@@ -198,7 +213,8 @@ static ErlNifFunc executor_nif_funcs[] = {
 	{"nif_executor_abort", 0, nif_executor_abort},
 	{"nif_executor_stop", 0, nif_executor_stop},
 	{"nif_executor_sendFrameworkMessage", 1,nif_executor_sendFrameworkMessage},
-	{"nif_executor_sendStatusUpdate", 1,nif_executor_sendStatusUpdate}
+	{"nif_executor_sendStatusUpdate", 1,nif_executor_sendStatusUpdate},
+	{"nif_executor_destroy" , 0, nif_executor_destroy}
 	
 };
 

@@ -20,7 +20,8 @@ extern "C" {
     ExecutorDriverStatus executor_run(ExecutorPtrPair state);
     ExecutorDriverStatus executor_sendFrameworkMessage(ExecutorPtrPair state, const char* data);
     ExecutorDriverStatus executor_sendStatusUpdate(ExecutorPtrPair state, ErlNifBinary* taskStatus);
-
+    void executor_destroy(ExecutorPtrPair state);
+    
 #ifdef __cplusplus
 }
 #endif
