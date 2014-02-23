@@ -33,6 +33,7 @@ init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid),
 init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
                                                 is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                 is_list(MasterLocation)->
+    io:format("in scheduler init ~n", []),
     nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation).
 
 start() ->
@@ -91,8 +92,8 @@ launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'),
 destroy()->
     nif_scheduler_destroy().
 
-% nif functions
 
+% nif functions
 nif_scheduler_init(_, _, _,_)->
     not_loaded(?LINE).
 nif_scheduler_init(_, _,_)->

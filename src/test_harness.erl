@@ -14,7 +14,7 @@ start()->
 	{ok,_Status1} = scheduler:start().
 
 stop() ->
-	{ok,_Status} = scheduler:stop(1).
+	{ok,_Status} = scheduler:stop(0).
 
 declineOffer(OfferIdentifer) ->
 	OfferId = #'OfferID'{value=OfferIdentifer},

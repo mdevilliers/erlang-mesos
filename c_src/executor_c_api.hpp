@@ -4,7 +4,6 @@
 
 #include "erl_nif.h"
 #include "erlang_mesos.hpp"
-
 #ifdef __cplusplus
 
 #include "erl_nif.h"
@@ -21,7 +20,7 @@ extern "C" {
     ExecutorDriverStatus executor_sendFrameworkMessage(ExecutorPtrPair state, const char* data);
     ExecutorDriverStatus executor_sendStatusUpdate(ExecutorPtrPair state, ErlNifBinary* taskStatus);
     void executor_destroy(ExecutorPtrPair state);
-    
+
 #ifdef __cplusplus
 }
 #endif

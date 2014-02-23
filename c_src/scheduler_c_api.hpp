@@ -1,12 +1,9 @@
-
-
 #ifndef MESOS_SCHEDULER_API_C_H
 #define MESOS_SCHEDULER_API_C_H
 
 #include "erl_nif.h"
 
 #ifdef __cplusplus
-#include <mesos/mesos.hpp>
 extern "C" {
 #endif
 
