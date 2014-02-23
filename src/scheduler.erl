@@ -28,12 +28,12 @@ init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid),
                                                             is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                             is_list(MasterLocation),
                                                             is_record(Credential,'Credential')->
-    nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation, mesos:encode_msg(Credential)).
+    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation, mesos_pb:encode_msg(Credential)).
 
 init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
                                                 is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                 is_list(MasterLocation)->
-    nif_scheduler_init(Pid, mesos:encode_msg(FrameworkInfo), MasterLocation).
+    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation).
 
 start() ->
     nif_scheduler_start().
@@ -51,22 +51,22 @@ stop(Failover) when   is_integer(Failover),
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     Filter = #'Filters'{},
-    nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
+    nif_scheduler_declineOffer(mesos_pb:encode_msg(OfferId), mesos_pb:encode_msg(Filter)).
 
 declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
                                             is_record(Filter, 'Filters') ->
-    nif_scheduler_declineOffer(mesos:encode_msg(OfferId), mesos:encode_msg(Filter)).
+    nif_scheduler_declineOffer(mesos_pb:encode_msg(OfferId), mesos_pb:encode_msg(Filter)).
 
 killTask(TaskId) when is_record(TaskId,'TaskID')->
-    nif_scheduler_killTask(mesos:encode_msg(TaskId)).
+    nif_scheduler_killTask(mesos_pb:encode_msg(TaskId)).
 
 reviveOffers() ->
     nif_scheduler_reviveOffers().
 
 sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(ExecuterId, 'ExecutorID'),
-                                                                is_record(SlaveId, 'SlaveID'),
-                                                                is_list(Data)->
-    nif_scheduler_sendFrameworkMessage(mesos:encode_msg(ExecuterId), mesos:encode_msg(SlaveId), Data).
+                                                      is_record(SlaveId, 'SlaveID'),
+                                                      is_list(Data)->
+    nif_scheduler_sendFrameworkMessage(mesos_pb:encode_msg(ExecuterId), mesos_pb:encode_msg(SlaveId), Data).
 
 requestResources(Requests) when is_list(Requests) ->
     EncodedRequests = encode_array(Requests, []),
@@ -80,13 +80,13 @@ launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'),
                                                 is_list(TaskInfos) ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     Filter = #'Filters'{},
-    nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
+    nif_scheduler_launchTasks(mesos_pb:encode_msg(OfferId), EncodedTaskInfos, mesos_pb:encode_msg(Filter)).
 
 launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'), 
                                                          is_list(TaskInfos),
                                                          is_record(Filter, 'Filters') ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
-    nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
+    nif_scheduler_launchTasks(mesos_pb:encode_msg(OfferId), EncodedTaskInfos, mesos_pb:encode_msg(Filter)).
 
 destroy()->
     nif_scheduler_destroy().
@@ -142,4 +142,4 @@ not_loaded(Line) ->
 % helpers
 encode_array([], Acc) -> Acc;
 encode_array([H|T], Acc) -> 
-    encode_array(T, [mesos:encode_msg(H) | Acc]).
+    encode_array(T, [mesos_pb:encode_msg(H) | Acc]).

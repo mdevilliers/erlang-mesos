@@ -35,7 +35,7 @@ sendFrameworkMessage(Data) when is_list(Data)->
     nif_executor_sendFrameworkMessage(Data).
 
 sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
-    nif_executor_sendStatusUpdate(mesos:encode_msg(TaskStatus)).
+    nif_executor_sendStatusUpdate(mesos_pb:encode_msg(TaskStatus)).
 
 destroy() ->
     nif_executor_destroy().
