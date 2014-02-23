@@ -1,8 +1,23 @@
 -module (gen_scheduler).
 
--export([init/3, start/0]).
+-export([init/3,
+        start/0,
+        join/0,
+        abort/0,
+        stop/1,
+        declineOffer/1,
+        declineOffer/2,
+        killTask/1,
+        reviveOffers/0,
+        sendFrameworkMessage/3,
+        requestResources/1,
+        reconcileTasks/1,
+        launchTasks/2,
+        launchTasks/3,
+        destroy/0]).
 
 -export([behaviour_info/1]).
+
 % private
 -export ([loop/1]).
 
@@ -30,7 +45,34 @@ init(Module, FrameworkInfo, MasterLocation) when is_record(FrameworkInfo, 'Frame
 
 start() ->
     scheduler:start().
+join() ->
+    scheduler:join().
+abort() ->
+    scheduler:abort().
+stop(Failover) ->
+    scheduler:stop(Failover).
+declineOffer(OfferId)->
+    scheduler:declineOffer(OfferId).  
+declineOffer(OfferId,Filter) ->
+    scheduler:declineOffer(OfferId,Filter).
+killTask(TaskId)->
+    scheduler:killTask(TaskId).
+reviveOffers()->
+    scheduler:reviveOffers().
+sendFrameworkMessage(ExecuterId,SlaveId,Data) ->
+    scheduler:sendFrameworkMessage(ExecuterId,SlaveId,Data).
+requestResources(Requests)->
+    scheduler:requestResources(Requests).
+reconcileTasks(TaskStatus)->
+    scheduler:reconcileTasks(TaskStatus).
+launchTasks(OfferId, TaskInfos)->
+    scheduler:launchTasks(OfferId, TaskInfos).
+launchTasks(OfferId, TaskInfos, Filter)->
+    scheduler:launchTasks(OfferId, TaskInfos, Filter).
+destroy()->
+    scheduler:destroy().
 
+% main call back loop
 loop(Module) -> 
     receive     
         {registered , FrameworkIdBin, MasterInfoBin } ->            
