@@ -22,6 +22,7 @@ extern "C" {
   SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifBinary* request);
   SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus);
   SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* taskInfos, ErlNifBinary* filters);
+  void scheduler_destroy (SchedulerPtrPair state);
 
 #ifdef __cplusplus
 }

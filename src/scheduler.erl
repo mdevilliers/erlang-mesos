@@ -16,7 +16,8 @@
             requestResources/1,
             reconcileTasks/1,
             launchTasks/2,
-            launchTasks/3]).
+            launchTasks/3,
+            destroy/0]).
 
 -on_load(init/0).
 
@@ -87,6 +88,9 @@ launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'),
     EncodedTaskInfos = encode_array(TaskInfos, []),
     nif_scheduler_launchTasks(mesos:encode_msg(OfferId), EncodedTaskInfos,mesos:encode_msg(Filter)).
 
+destroy()->
+    nif_scheduler_destroy().
+
 % nif functions
 
 nif_scheduler_init(_, _, _,_)->
@@ -114,6 +118,8 @@ nif_scheduler_requestResources(_) ->
 nif_scheduler_reconcileTasks(_) ->
     not_loaded(?LINE).
 nif_scheduler_launchTasks(_,_,_) ->
+    not_loaded(?LINE).
+nif_scheduler_destroy() ->
     not_loaded(?LINE).
 
 init() ->

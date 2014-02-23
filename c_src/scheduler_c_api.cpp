@@ -309,6 +309,19 @@ SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state,
   return driver->launchTasks(offerid_pb, taskInfo_,filter_pb);
 }
 
+
+void scheduler_destroy (SchedulerPtrPair state)
+{
+
+    assert(state.driver != NULL);
+    assert(state.driver != NULL);
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*>(state.driver);
+    CScheduler* scheduler = reinterpret_cast<CScheduler*>(state.scheduler);
+
+    delete driver;
+    delete scheduler;
+}
 /** 
   Callbacks
 

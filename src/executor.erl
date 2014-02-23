@@ -8,7 +8,8 @@
             abort/0,
             stop/0,
             sendFrameworkMessage/1,
-            sendStatusUpdate/1]).
+            sendStatusUpdate/1,
+            destroy/0]).
 
 -on_load(init/0).
 
@@ -36,6 +37,9 @@ sendFrameworkMessage(Data) when is_list(Data)->
 sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
     nif_executor_sendStatusUpdate(mesos:encode_msg(TaskStatus)).
 
+destroy() ->
+    nif_executor_destroy().
+
 % nif functions
 
 nif_executor_init(_)->
@@ -52,7 +56,9 @@ nif_executor_sendFrameworkMessage(_)->
     not_loaded(?LINE).
 nif_executor_sendStatusUpdate(_) ->
     not_loaded(?LINE).
-
+nif_executor_destroy() ->
+	not_loaded(?LINE).
+	
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
         {error, bad_name} ->

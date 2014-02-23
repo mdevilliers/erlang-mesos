@@ -29,7 +29,7 @@ requestResources() ->
 	Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 	Request = #'Request'{resources = [Resource1,Resource2]},
 	io:format("~p~n", [Request]),
-	erlang_scheduler:requestResources([Request,Request]).
+	scheduler:requestResources([Request,Request]).
 
 
 flush() ->

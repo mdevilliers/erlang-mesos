@@ -127,7 +127,6 @@ nif_executor_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	ExecutorDriverStatus status = executor_stop( state->executor_state );
 	
 	if(status == 4){ // driver_stopped
-		state->initilised = 0;
 		return enif_make_tuple2(env, 
 							enif_make_atom(env, "ok"), 
 							get_atom_from_status(env, status));
