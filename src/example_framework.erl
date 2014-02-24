@@ -43,23 +43,31 @@ resourceOffers(State, Offer) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
 
     CurrentTaskId = State#framework_state.task_id, 
-    State1 = State#framework_state{task_id = CurrentTaskId + 1},
+    CurrentTaskId1 = CurrentTaskId + 1,
+    State1 = State#framework_state{task_id = CurrentTaskId1},
+
     io:format("Launching Task : ~p", [CurrentTaskId]),
 
-    Scalar = mesos:enum_symbol_by_value('Value.Type', 0),
+    Scalar = mesos_pb:enum_symbol_by_value('Value.Type', 0),
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
     Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
-    Executor = abc,
+    Executor = #'ExecutorInfo'{
+         executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},% = 1, {msg,'ExecutorID'}
+         command = #'CommandInfo'{value = "bash sleep 20"},                        % = 7, {msg,'CommandInfo'}
+         name = "sleep",                                                      % = 9, string (optional)
+         source = "Erlang Test Framework"
+        },
 
     TaskInfo = #'TaskInfo'{
-              name = "ErlangTask",                          % = 1, string
-              task_id = #'TaskID'{value = CurrentTaskId},                      % = 2, {msg,'TaskID'}
-              slave_id = Offer#'Offer'.slave_id,                     % = 3, {msg,'SlaveID'}
-              resources = [Resource1,Resource2],                % = 4, [{msg,'Resource'}]
+              name = "ErlangTask",                                          % = 1, string
+              task_id = #'TaskID'{ value = integer_to_list(CurrentTaskId1)}, % = 2, {msg,'TaskID'}
+              slave_id = Offer#'Offer'.slave_id,                            % = 3, {msg,'SlaveID'}
+              resources = [Resource1,Resource2],                            % = 4, [{msg,'Resource'}]
               executor = Executor
     },
-    gen_scheduler:launchTasks(Offer#'Offer'.id, TaskInfo),
+
+    {ok,driver_running} = gen_scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
     {ok,State1}.
 
 disconnected(State) ->

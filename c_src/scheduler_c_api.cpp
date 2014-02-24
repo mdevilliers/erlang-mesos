@@ -264,19 +264,20 @@ SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state,
     return driver->sendFrameworkMessage(executorid_pb, slaveid_pb, data);
 }
 
-SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifBinary* request)
+SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, BinaryNifArray* requests)
 {
   assert(state.driver != NULL);
-  assert(request != NULL);
+  assert(requests != NULL);
 
   vector<Request> requests_;
-  if(! deserialize<Request>( requests_, request)) {return DRIVER_ABORTED;};
+
+  if(! deserialize<Request>( requests_, requests)) {return DRIVER_ABORTED;};
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
   return driver->requestResources(requests_);
 }
 
-SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus)
+SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, BinaryNifArray* taskStatus)
 {
   assert(state.driver != NULL);
   assert(taskStatus != NULL);
@@ -290,7 +291,7 @@ SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBin
 
 SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, 
                                               ErlNifBinary* offerId, 
-                                              ErlNifBinary* taskInfos, 
+                                              BinaryNifArray* taskInfos, 
                                               ErlNifBinary* filters)
 {
   assert(state.driver != NULL);
@@ -298,11 +299,11 @@ SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state,
   assert(taskInfos != NULL);
 
   OfferID offerid_pb;
-  vector<TaskInfo> taskInfo_;
+  vector<TaskInfo> taskInfo_ ;
   Filters filter_pb;
 
   if(!deserialize<OfferID>(offerid_pb,offerId)) { return DRIVER_ABORTED; };
-  if(! deserialize<TaskInfo>( taskInfo_, taskInfos)) {return DRIVER_ABORTED;};
+  if(!deserialize<TaskInfo>( taskInfo_, taskInfos)) {return DRIVER_ABORTED;};
   if(!deserialize<Filters>(filter_pb,filters)) { return DRIVER_ABORTED; };
 
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);

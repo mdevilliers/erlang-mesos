@@ -51,7 +51,6 @@ static int inspect_array_of_binary_objects(ErlNifEnv* env, ERL_NIF_TERM term, Er
         {
         	return 0;
         }
-
 		binary_arr[i++] = request_binary;
     }
     return 1;

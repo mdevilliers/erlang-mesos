@@ -16,9 +16,9 @@ extern "C" {
   SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId);
   SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_sendFrameworkMessage(SchedulerPtrPair state, ErlNifBinary* executorId, ErlNifBinary* slaveId, const char* data);
-  SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, ErlNifBinary* request);
-  SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, ErlNifBinary* taskStatus);
-  SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* taskInfos, ErlNifBinary* filters);
+  SchedulerDriverStatus scheduler_requestResources(SchedulerPtrPair state, BinaryNifArray* requests);
+  SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, BinaryNifArray* taskStatus);
+  SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, ErlNifBinary* offerId, BinaryNifArray* tasks, ErlNifBinary* filters);
   void scheduler_destroy (SchedulerPtrPair state);
 
 #ifdef __cplusplus
