@@ -1,6 +1,6 @@
 -module (gen_scheduler).
 
--export([init/3,
+-export([init/4,
         start/0,
         join/0,
         abort/0,
@@ -19,27 +19,27 @@
 -export([behaviour_info/1]).
 
 % private
--export ([loop/1]).
+-export ([loop/2]).
 
 -include_lib("include/mesos.hrl").
 
 behaviour_info(callbacks) ->
-    [ {registered, 2 }, 
-      {reregistered, 1 }, 
-      {disconnected, 0 }, 
-      {offerRescinded, 1 }, 
-      {statusUpdate, 1 }, 
-      {frameworkMessage, 3 }, 
-      {slaveLost, 1 }, 
-      {executorLost, 3 } , 
-      {error, 1 }, 
-      {resourceOffers,1 }];
+    [ {registered, 3}, 
+      {reregistered, 2}, 
+      {disconnected, 1}, 
+      {offerRescinded, 2}, 
+      {statusUpdate, 2}, 
+      {frameworkMessage, 4}, 
+      {slaveLost, 2}, 
+      {executorLost, 4} , 
+      {error, 2}, 
+      {resourceOffers, 2}];
 behaviour_info(_Other) ->
     undefined.
 
-init(Module, FrameworkInfo, MasterLocation) when is_record(FrameworkInfo, 'FrameworkInfo'), 
+init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                  is_list(MasterLocation) ->
-    Pid = spawn(?MODULE, loop, [Module]),
+    Pid = spawn(?MODULE, loop, [Module, State]),
     Result = scheduler:init(Pid, FrameworkInfo, MasterLocation),
     Result.
 
@@ -73,55 +73,55 @@ destroy()->
     scheduler:destroy().
 
 % main call back loop
-loop(Module) -> 
+loop(Module,State) -> 
     receive     
         {registered , FrameworkIdBin, MasterInfoBin } ->            
                 FrameworkId = mesos_pb:decode_msg(FrameworkIdBin, 'FrameworkID'),
                 MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
                 MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-                Module:registered(FrameworkId, MasterInfo2),
-                loop(Module);
+                {ok, State1} = Module:registered(State, FrameworkId, MasterInfo2),
+                loop(Module, State1);
         {resourceOffers, OfferBin} ->
                 Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
-                Module:resourceOffers(Offer),
-                loop(Module);
+                 {ok, State1} = Module:resourceOffers(State,Offer),
+                loop(Module, State1);
         {reregistered} ->
-                Module:reregistered(),
-                loop(Module);
+                {ok, State1} = Module:reregistered(State),
+                loop(Module,State1);
         {disconnected} ->
-                Module:disconnected(),
-                loop(Module);   
+                {ok, State1} = Module:disconnected(State),
+                loop(Module, State1);   
         {offerRescinded, OfferIdBin} ->
                 OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
-                Module:offerRescinded(OfferId),
-                loop(Module);
+                {ok, State1} = Module:offerRescinded(State,OfferId),
+                loop(Module,State1);
         {statusUpdate, TaskStatusBin} ->
                 TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
-                Module:statusUpdate(TaskStatus),
-                loop(Module);
+                {ok, State1} = Module:statusUpdate(State,TaskStatus),
+                loop(Module,State1);
         {frameworkMessage, ExecutorIdBin, SlaveIdBin, Message} ->
                 ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                Module:frameworkMessage(ExecutorId,SlaveId,Message),
-                loop(Module);
+                {ok, State1} = Module:frameworkMessage(State,ExecutorId,SlaveId,Message),
+                loop(Module, State1);
         {slaveLost, SlaveIdBin} ->
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                Module:frameworkMessage(SlaveId),
-                loop(Module);
+                {ok, State1} = Module:frameworkMessage(State,SlaveId),
+                loop(Module,State1);
         {executorLost, ExecutorIdBin, SlaveIdBin, Status} ->
                 ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                Module:executorLost(ExecutorId,SlaveId,Status),
-                loop(Module);
+                {ok, State1} = Module:executorLost(State, ExecutorId,SlaveId,Status),
+                loop(Module,State1);
         {error, Message} ->
-                Module:error(Message),
-                loop(Module);           
+                {ok, State1} = Module:error(State,Message),
+                loop(Module,State1);           
         Any ->
             io:format("other message from nif : ~p~n", [Any]),
-            loop(Module)
+            loop(Module,State)
     after
         1000 ->
-            loop(Module)
+            loop(Module,State)
     end.
 
 % helpers
