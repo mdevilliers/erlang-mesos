@@ -39,10 +39,15 @@ reregistered(State, MasterInfo) ->
     io:format("ReRegistered callback : ~p ~n", [MasterInfo]),
     {ok,State}.
 
+resourceOffers(#framework_state{task_id=TaskNumber, task_limit=TaskNumber} = State, Offer) ->
+    io:format("Reached max tasks ~p so declining offer.~n", [TaskNumber]),
+    gen_scheduler:declineOffer(Offer#'Offer'.id),
+    {ok,State};
 resourceOffers(State, Offer) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
 
     CurrentTaskId = State#framework_state.task_id, 
+
     CurrentTaskId1 = CurrentTaskId + 1,
     State1 = State#framework_state{task_id = CurrentTaskId1},
 
@@ -53,18 +58,18 @@ resourceOffers(State, Offer) ->
     Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
     Executor = #'ExecutorInfo'{
-         executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},% = 1, {msg,'ExecutorID'}
-         command = #'CommandInfo'{value = "bash sleep 20"},                        % = 7, {msg,'CommandInfo'}
-         name = "sleep",                                                      % = 9, string (optional)
-         source = "Erlang Test Framework"
-        },
+      executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},
+      command = #'CommandInfo'{value = "bash sleep 20"},
+      name = "sleep",
+      source = "Erlang Test Framework"
+    },
 
     TaskInfo = #'TaskInfo'{
-              name = "ErlangTask",                                          % = 1, string
-              task_id = #'TaskID'{ value = integer_to_list(CurrentTaskId1)}, % = 2, {msg,'TaskID'}
-              slave_id = Offer#'Offer'.slave_id,                            % = 3, {msg,'SlaveID'}
-              resources = [Resource1,Resource2],                            % = 4, [{msg,'Resource'}]
-              executor = Executor
+        name = "ErlangTask",
+        task_id = #'TaskID'{ value = integer_to_list(CurrentTaskId1)},
+        slave_id = Offer#'Offer'.slave_id,
+        resources = [Resource1,Resource2],
+        executor = Executor
     },
 
     {ok,driver_running} = gen_scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
@@ -77,7 +82,12 @@ disconnected(State) ->
 offerRescinded(State, OfferID) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
-
+ 
+statusUpdate(#framework_state{task_id=TaskNumber} = State, {'TaskStatus',{'TaskID',_},'TASK_LOST',_,_,_}) ->
+    io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", ['TASK_LOST']),
+    TaskNumber1 = TaskNumber - 1,
+    State1 = State#framework_state{task_id = TaskNumber1},
+    {ok,State1};
 statusUpdate(State, StatusUpdate) ->
     io:format("StatusUpdate callback : ~p ~n", [StatusUpdate]),
     {ok,State}. 
