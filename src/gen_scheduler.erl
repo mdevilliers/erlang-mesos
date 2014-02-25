@@ -1,5 +1,6 @@
 -module (gen_scheduler).
 
+%api
 -export([init/4,
         start/0,
         join/0,
