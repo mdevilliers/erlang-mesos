@@ -30,33 +30,6 @@ template<typename T> inline bool deserialize(T& ret, ErlNifBinary* obj) {
 
 template<typename T> inline bool deserialize(
       std::vector<T>& ret,
-      ErlNifBinary* ent)
-  {
-    for(int i = 0; i < 1; i++)
-    {
-      T obj;
-      if(!deserialize<T>(obj, &ent[i])){return false;}
-      ret.push_back(obj);
-    }
-    return true;
-  }
-
-template<typename T> inline bool deserialize(
-      std::vector<T>& ret,
-      ErlNifBinary* ent,
-      int length)
-  {
-    for(int i = 0; i < length; i++)
-    {
-      T obj;
-      if(!deserialize<T>(obj, &ent[i])){return false;}
-      ret.push_back(obj);
-    }
-    return true;
-  }
-
-template<typename T> inline bool deserialize(
-      std::vector<T>& ret,
       BinaryNifArray* request)
   {
     for(int i = 0; i < request->length; i++)
