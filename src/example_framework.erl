@@ -57,9 +57,11 @@ resourceOffers(State, Offer) ->
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
     Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
+    CommandInfoUri = #'CommandInfo.URI'{ value = filename:absname("../scripts/example_executor.es") },
+
     Executor = #'ExecutorInfo'{
       executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},
-      command = #'CommandInfo'{value = "bash sleep 20"},
+      command = #'CommandInfo'{value = filename:absname("../scripts/example_executor.es"), uris = [CommandInfoUri] },
       name = "sleep",
       source = "Erlang Test Framework"
     },

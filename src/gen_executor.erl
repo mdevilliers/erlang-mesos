@@ -12,6 +12,19 @@
 
 % private
 -export ([loop/2]).
+-export([behaviour_info/1]).
+
+behaviour_info(callbacks) ->
+    [ {registered, 4}, 
+      {reregistered, 2}, 
+      {disconnected, 1}, 
+      {launchTask, 2},  
+      {killTask, 2}, 
+      {frameworkMessage, 2}, 
+      {shutdown, 1} , 
+      {error, 2}];
+behaviour_info(_Other) ->
+    undefined.
 
 -include_lib("include/mesos.hrl").
 
@@ -68,7 +81,7 @@ loop(Module,State) ->
                 {ok, State1} = Module:error(State,Message),
                 loop(Module,State1);           
         Any ->
-            io:format("other message from nif : ~p~n", [Any]),
+            io:format("Other message from nif : ~p~n", [Any]),
             loop(Module,State)
     after
         1000 ->
