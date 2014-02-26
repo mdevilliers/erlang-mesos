@@ -18,6 +18,7 @@
 init()->
     ok = gen_executor:init(?MODULE, []),
     {ok,Status} = gen_executor:start(),
+    gen_executor:sendFrameworkMessage("hello from the executor"),
     Status.
 
 % call backs

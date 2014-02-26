@@ -57,11 +57,12 @@ resourceOffers(State, Offer) ->
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
     Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
-    CommandInfoUri = #'CommandInfo.URI'{ value = filename:absname("../scripts/example_executor.es") },
+    CommandInfoUri = #'CommandInfo.URI'{ value = "https://github.com/balanced/balanced-dashboard/archive/pre-rev1.tar.gz" },
+    ExecutorLocation = filename:absname("scripts/example_executor.es"),
 
     Executor = #'ExecutorInfo'{
       executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},
-      command = #'CommandInfo'{value = filename:absname("../scripts/example_executor.es"), uris = [CommandInfoUri] },
+      command = #'CommandInfo'{value = ExecutorLocation , uris = [CommandInfoUri]},
       name = "sleep",
       source = "Erlang Test Framework"
     },
@@ -73,7 +74,7 @@ resourceOffers(State, Offer) ->
         resources = [Resource1,Resource2],
         executor = Executor
     },
-
+    io:format("TaskInfo : ~p~n", [TaskInfo]),
     {ok,driver_running} = gen_scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
     {ok,State1}.
 
