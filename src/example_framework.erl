@@ -1,12 +1,12 @@
 -module (example_framework).
--behaviour (gen_scheduler).
+-behaviour (scheduler).
 
 -include_lib("include/mesos.hrl").
 
 % api
 -export ([init/0]).
 
-% from gen_scheduler
+% from scheduler
 -export ([registered/3, 
           reregistered/2, 
           disconnected/1, 
@@ -26,8 +26,8 @@ init()->
     MasterLocation = "127.0.1.1:5050",
     State = #framework_state{},
     io:format("State : ~p~n", [State]),
-    ok = gen_scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
-    {ok,Status} = gen_scheduler:start(),
+    ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
+    {ok,Status} = scheduler:start(),
     Status.
 
 % call backs
@@ -41,7 +41,7 @@ reregistered(State, MasterInfo) ->
 
 resourceOffers(#framework_state{task_id=TaskNumber, task_limit=TaskNumber} = State, Offer) ->
     io:format("Reached max tasks ~p so declining offer.~n", [TaskNumber]),
-    gen_scheduler:declineOffer(Offer#'Offer'.id),
+    scheduler:declineOffer(Offer#'Offer'.id),
     {ok,State};
 resourceOffers(State, Offer) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
@@ -75,7 +75,7 @@ resourceOffers(State, Offer) ->
         executor = Executor
     },
     io:format("TaskInfo : ~p~n", [TaskInfo]),
-    {ok,driver_running} = gen_scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
+    {ok,driver_running} = scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
     {ok,State1}.
 
 disconnected(State) ->

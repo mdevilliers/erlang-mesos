@@ -217,4 +217,4 @@ static ErlNifFunc executor_nif_funcs[] = {
 	
 };
 
-ERL_NIF_INIT(executor, executor_nif_funcs, executor_load, NULL, NULL, executor_unload);
+ERL_NIF_INIT(nif_executor, executor_nif_funcs, executor_load, NULL, NULL, executor_unload);

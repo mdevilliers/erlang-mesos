@@ -1,6 +1,6 @@
 -module (example_executor).
 
--behaviour (gen_executor).
+-behaviour (executor).
 
 % from gen_executor
 -export ([registered/4, 
@@ -16,9 +16,9 @@
 -export ([init/0]).    
 
 init()->
-    ok = gen_executor:init(?MODULE, []),
-    {ok,Status} = gen_executor:start(),
-    gen_executor:sendFrameworkMessage("hello from the executor"),
+    ok = executor:init(?MODULE, []),
+    {ok,Status} = executor:start(),
+    %executor:sendFrameworkMessage("hello from the executor"),
     Status.
 
 % call backs

@@ -479,4 +479,4 @@ static ErlNifFunc nif_funcs[] = {
 	{"nif_scheduler_destroy" , 0, nif_scheduler_destroy}
 };
 
-ERL_NIF_INIT(scheduler, nif_funcs, load, NULL, NULL, unload);
+ERL_NIF_INIT(nif_scheduler, nif_funcs, load, NULL, NULL, unload);
