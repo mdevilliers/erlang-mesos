@@ -18,12 +18,12 @@
           error/2,
           resourceOffers/2]).
 
--record (framework_state, {task_id = 0,task_limit = 5 }).
+-record (framework_state, {task_id = 0,task_limit = 1 }).
 
 % api
 init()->
     FrameworkInfo = #'FrameworkInfo'{user="John Smith", name="Erlang Test Framework"},
-    MasterLocation = "127.0.1.1:5050",
+    MasterLocation = "127.0.1.1:5050", % "192.168.33.10:5050",
     State = #framework_state{},
     io:format("State : ~p~n", [State]),
     ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
@@ -55,24 +55,21 @@ resourceOffers(State, Offer) ->
 
     Scalar = mesos_pb:enum_symbol_by_value('Value.Type', 0),
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
-    Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
+    %Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
-    CommandInfoUri = #'CommandInfo.URI'{ value = "https://github.com/balanced/balanced-dashboard/archive/pre-rev1.tar.gz" },
-    ExecutorLocation = filename:absname("scripts/example_executor.es"),
+    CommandInfoUri = #'CommandInfo.URI'{ value = "https://gist.github.com/guenter/7470373/raw/42ed566dba6a22f1b160e9774d750e46e83b61ad/http.py" },
+    %ExecutorLocation = filename:absname("scripts/example_executor.es"),
+    %Command = filename:absname("scripts/example_executor.es"),
+    %{ok, CurrentFolder } = file:get_cwd(),
 
-    Executor = #'ExecutorInfo'{
-      executor_id = #'ExecutorID'{value = integer_to_list(CurrentTaskId1)},
-      command = #'CommandInfo'{value = ExecutorLocation , uris = [CommandInfoUri]},
-      name = "sleep",
-      source = "Erlang Test Framework"
-    },
-
+    %Command = "cd " ++ CurrentFolder ++" && erl -pa ebin -run example_executor init",
+Command = "python http.py",
     TaskInfo = #'TaskInfo'{
         name = "ErlangTask",
-        task_id = #'TaskID'{ value = integer_to_list(CurrentTaskId1)},
+        task_id = #'TaskID'{ value = "task_id_" ++ integer_to_list(CurrentTaskId1)},
         slave_id = Offer#'Offer'.slave_id,
-        resources = [Resource1,Resource2],
-        executor = Executor
+        resources = [Resource1],
+        command = #'CommandInfo'{value = Command, uris = [CommandInfoUri]}
     },
     io:format("TaskInfo : ~p~n", [TaskInfo]),
     {ok,driver_running} = scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
