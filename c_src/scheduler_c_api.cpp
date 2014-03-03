@@ -306,6 +306,10 @@ SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state,
   if(!deserialize<TaskInfo>( taskInfo_, taskInfos)) {return DRIVER_ABORTED;};
   if(!deserialize<Filters>(filter_pb,filters)) { return DRIVER_ABORTED; };
 
+  //offerid_pb.PrintDebugString();
+  //taskInfo_[0].PrintDebugString();
+  //filter_pb.PrintDebugString();
+
   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
   return driver->launchTasks(offerid_pb, taskInfo_,filter_pb);
 }

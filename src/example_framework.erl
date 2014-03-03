@@ -22,8 +22,8 @@
 
 % api
 init()->
-    FrameworkInfo = #'FrameworkInfo'{user="John Smith", name="Erlang Test Framework"},
-    MasterLocation = "127.0.1.1:5050", % "192.168.33.10:5050",
+    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+    MasterLocation = "127.0.1.1:5050",
     State = #framework_state{},
     io:format("State : ~p~n", [State]),
     ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
@@ -57,19 +57,26 @@ resourceOffers(State, Offer) ->
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
     %Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
-    CommandInfoUri = #'CommandInfo.URI'{ value = "https://gist.github.com/guenter/7470373/raw/42ed566dba6a22f1b160e9774d750e46e83b61ad/http.py" },
-    %ExecutorLocation = filename:absname("scripts/example_executor.es"),
-    %Command = filename:absname("scripts/example_executor.es"),
-    %{ok, CurrentFolder } = file:get_cwd(),
+    % example 1 fetch a file and execute it
+    %CommandInfoUri = #'CommandInfo.URI'{ value = "http://gist.github.com/guenter/7470373/raw/42ed566dba6a22f1b160e9774d750e46e83b61ad/http.py", executable=true },
+    %Command = "python http.py",
 
-    %Command = "cd " ++ CurrentFolder ++" && erl -pa ebin -run example_executor init",
-Command = "python http.py",
+    % example 2 launch a local executor
+    {ok, CurrentFolder } = file:get_cwd(),
+    Command = "cd " ++ CurrentFolder ++" && erl -pa ebin -run example_executor init",
+
+    {_,{H,M,S}} = calendar:local_time(),
+
+    Id = integer_to_list(H) ++ integer_to_list(M) ++ integer_to_list(S),
+
     TaskInfo = #'TaskInfo'{
-        name = "ErlangTask",
-        task_id = #'TaskID'{ value = "task_id_" ++ integer_to_list(CurrentTaskId1)},
+        name = "erlang_task" ++ Id,
+        task_id = #'TaskID'{ value = "task_id_" ++ Id},
         slave_id = Offer#'Offer'.slave_id,
         resources = [Resource1],
-        command = #'CommandInfo'{value = Command, uris = [CommandInfoUri]}
+        executor = #'ExecutorInfo'{ executor_id= #'ExecutorID'{ value = "executor_id_" ++ Id},
+                                    command = #'CommandInfo'{value = Command}}%, uris = [CommandInfoUri]}}
+    %    command = #'CommandInfo'{value = Command}%, uris = [CommandInfoUri]}
     },
     io:format("TaskInfo : ~p~n", [TaskInfo]),
     {ok,driver_running} = scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
