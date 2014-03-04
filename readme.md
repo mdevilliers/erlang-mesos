@@ -39,8 +39,8 @@ New library therefor run in another node
 
 Todo
 ----
-1. demonstrate nice shutdown, upgrade, break loop
-2. example framework, example executor, tutorial
+1. demonstrate nice shutdown, upgrade, break loop - DONE
+2. example framework, example executor, tutorial - ISH
 3. upgrade to mesos 0.16
 4. auto build the protobuffer files with gdb, clean up depenadancies
 5. c/c++ code review

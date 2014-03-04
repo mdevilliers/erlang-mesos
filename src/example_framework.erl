@@ -4,7 +4,7 @@
 -include_lib("include/mesos.hrl").
 
 % api
--export ([init/0]).
+-export ([init/0, exit/0]).
 
 % from scheduler
 -export ([registered/3, 
@@ -18,17 +18,22 @@
           error/2,
           resourceOffers/2]).
 
--record (framework_state, {task_id = 0,task_limit = 1 }).
+-record (framework_state, { tasks_started = 0 }).
 
 % api
 init()->
+
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
     MasterLocation = "127.0.1.1:5050",
     State = #framework_state{},
-    io:format("State : ~p~n", [State]),
+
     ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
     {ok,Status} = scheduler:start(),
     Status.
+
+exit() ->
+    {ok,driver_stopped} = scheduler:stop(0), % stop the scheduler
+    ok = scheduler:destroy(). % destroy and cleanup the nif
 
 % call backs
 registered(State, FrameworkID, MasterInfo) ->
@@ -39,29 +44,21 @@ reregistered(State, MasterInfo) ->
     io:format("ReRegistered callback : ~p ~n", [MasterInfo]),
     {ok,State}.
 
-resourceOffers(#framework_state{task_id=TaskNumber, task_limit=TaskNumber} = State, Offer) ->
-    io:format("Reached max tasks ~p so declining offer.~n", [TaskNumber]),
+resourceOffers(#framework_state{ tasks_started = 1} = State, Offer) ->
+    io:format("Reached max tasks [1] so declining offer.~n", []),
     scheduler:declineOffer(Offer#'Offer'.id),
     {ok,State};
 resourceOffers(State, Offer) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
 
-    CurrentTaskId = State#framework_state.task_id, 
-
-    CurrentTaskId1 = CurrentTaskId + 1,
-    State1 = State#framework_state{task_id = CurrentTaskId1},
-
-    io:format("Launching Task : ~p", [CurrentTaskId]),
+    State1 = State#framework_state{tasks_started = 1},
+    io:format("Launching Task.", []),
 
     Scalar = mesos_pb:enum_symbol_by_value('Value.Type', 0),
     Resource1 = #'Resource'{name="cpus", type=Scalar, scalar=#'Value.Scalar'{value=1}},
-    %Resource2 = #'Resource'{name="mem", type=Scalar, scalar=#'Value.Scalar'{value=128}},
 
-    % example 1 fetch a file and execute it
-    %CommandInfoUri = #'CommandInfo.URI'{ value = "http://gist.github.com/guenter/7470373/raw/42ed566dba6a22f1b160e9774d750e46e83b61ad/http.py", executable=true },
-    %Command = "python http.py",
-
-    % example 2 launch a local executor
+    % example to launch a local executor - the example_executor.erl
+    % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
     Command = "cd " ++ CurrentFolder ++" && erl -pa ebin -run example_executor init",
 
@@ -75,8 +72,7 @@ resourceOffers(State, Offer) ->
         slave_id = Offer#'Offer'.slave_id,
         resources = [Resource1],
         executor = #'ExecutorInfo'{ executor_id= #'ExecutorID'{ value = "executor_id_" ++ Id},
-                                    command = #'CommandInfo'{value = Command}}%, uris = [CommandInfoUri]}}
-    %    command = #'CommandInfo'{value = Command}%, uris = [CommandInfoUri]}
+                                    command = #'CommandInfo'{value = Command}}
     },
     io:format("TaskInfo : ~p~n", [TaskInfo]),
     {ok,driver_running} = scheduler:launchTasks(Offer#'Offer'.id, [TaskInfo]),
@@ -89,11 +85,13 @@ disconnected(State) ->
 offerRescinded(State, OfferID) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
- 
-statusUpdate(#framework_state{task_id=TaskNumber} = State, {'TaskStatus',{'TaskID',_},'TASK_LOST',_,_,_}) ->
-    io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", ['TASK_LOST']),
-    TaskNumber1 = TaskNumber - 1,
-    State1 = State#framework_state{task_id = TaskNumber1},
+
+statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_}) ->
+    io:format("StatusUpdate callback : ~p  -> task running current tasks.~n", ['TASK_RUNNING']),
+    {ok,State};
+statusUpdate( State, {'TaskStatus',{'TaskID',_},Message,_,_,_}) ->
+    io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
+    State1 = State#framework_state{tasks_started = 0},
     {ok,State1};
 statusUpdate(State, StatusUpdate) ->
     io:format("StatusUpdate callback : ~p ~n", [StatusUpdate]),

@@ -30,6 +30,7 @@ behaviour_info(_Other) ->
 
 init(Module, State)->
     Pid = spawn(?MODULE, loop, [Module, State]),
+    register(executor_loop, Pid),
     Result = nif_executor:init(Pid),
     Result.
 
@@ -39,14 +40,21 @@ join() ->
     nif_executor:join().
 abort() ->
     nif_executor:abort().
-stop() ->
+stop() ->       
     nif_executor:stop().
+
 sendFrameworkMessage(Data) ->
     nif_executor:sendFrameworkMessage(Data).
 sendStatusUpdate(TaskStatus)->
     nif_executor:sendStatusUpdate(TaskStatus).
 destroy() ->
-    nif_executor:destroy().
+    case nif_executor:destroy() of
+        {ok, Status} ->
+            executor_loop ! {internal_shudown},
+            {ok, Status};
+        Other ->
+            Other
+    end.
 
 loop(Module,State) -> 
     receive     
@@ -79,7 +87,10 @@ loop(Module,State) ->
                 loop(Module,State1);
         {error, Message} ->
                 {ok, State1} = Module:error(State,Message),
-                loop(Module,State1);           
+                loop(Module,State1);
+        {internal_shudown} ->
+                unregister(executor_loop),
+                {shutdown_complete};          
         Any ->
             io:format("Other message from nif : ~p~n", [Any]),
             loop(Module,State)

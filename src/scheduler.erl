@@ -41,6 +41,7 @@ behaviour_info(_Other) ->
 init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                  is_list(MasterLocation) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
+    register(scheduler_loop, Pid),
     Result = nif_scheduler:init(Pid, FrameworkInfo, MasterLocation),
     Result.
 
@@ -70,9 +71,15 @@ launchTasks(OfferId, TaskInfos)->
     nif_scheduler:launchTasks(OfferId, TaskInfos).
 launchTasks(OfferId, TaskInfos, Filter)->
     nif_scheduler:launchTasks(OfferId, TaskInfos, Filter).
-destroy()->
-    nif_scheduler:destroy().
-
+destroy() ->
+    case nif_scheduler:destroy() of
+        ok ->
+            scheduler_loop ! {internal_shudown},
+            ok;
+        Other ->
+        io:format("shutting down loop OTHER ~p ~n", [Other]),
+            Other
+    end.
 % main call back loop
 loop(Module,State) -> 
     receive     
@@ -116,7 +123,10 @@ loop(Module,State) ->
                 loop(Module,State1);
         {error, Message} ->
                 {ok, State1} = Module:error(State,Message),
-                loop(Module,State1);           
+                loop(Module,State1);   
+        {internal_shudown} ->
+                unregister(scheduler_loop),
+                {shutdown_complete};        
         Any ->
             io:format("other message from nif : ~p~n", [Any]),
             loop(Module,State)

@@ -4,6 +4,9 @@
 
 -include_lib("include/mesos.hrl").
 
+% api
+-export ([init/0, exit/0]).    
+
 % from gen_executor
 -export ([registered/4, 
           reregistered/2, 
@@ -14,14 +17,16 @@
           shutdown/1, 
           error/2]).
 
-% api
--export ([init/0]).    
-
 init()->
     ok = executor:init(?MODULE, []),
     {ok,Status} = executor:start(),
-    executor:sendFrameworkMessage("hello from the executor"),
+    executor:sendFrameworkMessage("hello from the executor's init method"),
     Status.
+
+exit() ->
+    {ok,driver_stopped} = executor:stop(), % stop the executor
+    ok = executor:destroy(), % destroy and cleanup the nif
+    init:stop(). % exit the process
 
 % call backs
 registered(State, ExecutorInfo, FrameworkInfo, SlaveInfo) ->
@@ -38,7 +43,12 @@ disconnected(State) ->
 
 launchTask(State,TaskInfo) ->
     io:format("LaunchTask callback : ~p ~n", [TaskInfo]),
-    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskInfo#'TaskInfo'.task_id , state= mesos_pb:enum_symbol_by_value_TaskState(1)}),
+    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskInfo#'TaskInfo'.task_id , state='TASK_RUNNING'}),
+
+    timer:sleep(5000),
+    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskInfo#'TaskInfo'.task_id , state='TASK_FINISHED'}),
+    spawn(?MODULE, exit, []),
+
     {ok,State}.
 
 killTask(State,TaskID) ->
@@ -56,5 +66,3 @@ shutdown(State) ->
 error(State,Message) ->
     io:format("Error callback : ~p ~n", [Message]),
     {ok,State}.
-
-
