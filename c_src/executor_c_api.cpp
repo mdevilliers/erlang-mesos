@@ -300,7 +300,7 @@ void CExecutor::error(ExecutorDriver* driver, const string& messageStr)
 
     ERL_NIF_TERM message = enif_make_tuple2(env, 
                               enif_make_atom(env, "error"), 
-                               enif_make_string(env, messageStr.c_str(), ERL_NIF_LATIN1));
+                              enif_make_string(env, messageStr.c_str(), ERL_NIF_LATIN1));
     
     enif_send(NULL, this->pid, env, message);
     enif_clear_env(env);

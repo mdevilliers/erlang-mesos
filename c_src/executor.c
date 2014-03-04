@@ -32,16 +32,17 @@ nif_executor_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not already been initiated. Call executor_stop first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_already_inited"));
 	}
 
 	ErlNifPid* pid = (ErlNifPid*) enif_alloc(sizeof(ErlNifPid));
 
 	if(!enif_get_local_pid(env, argv[0], pid))
     {
-    	return enif_make_tuple2(env, 
+    	return enif_make_tuple3(env, 
 								enif_make_atom(env, "argument_error"), 
-								enif_make_string(env, "Invalid or corrupted Pid", ERL_NIF_LATIN1));
+								enif_make_atom(env, "invalid_or_corrupted_parameter"),
+								enif_make_atom(env, "pid"));
     }
 	state->executor_state = executor_init(pid);
 	
@@ -58,7 +59,7 @@ nif_executor_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	
 	ExecutorDriverStatus status = executor_start( state->executor_state );
@@ -76,7 +77,7 @@ nif_executor_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	
 	ExecutorDriverStatus status = executor_abort( state->executor_state );
@@ -102,7 +103,7 @@ nif_executor_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	
 	ExecutorDriverStatus status = executor_join( state->executor_state );
@@ -121,7 +122,7 @@ nif_executor_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 
 	ExecutorDriverStatus status = executor_stop( state->executor_state );
@@ -148,15 +149,16 @@ nif_executor_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	
 	//REVIEW : buffer length
 	if(!enif_get_string(env, argv[0], data , MAXBUFLEN, ERL_NIF_LATIN1 ))
 	{
-		return enif_make_tuple2(env, 
+		return enif_make_tuple3(env, 
 					enif_make_atom(env, "argument_error"), 
-					enif_make_string(env, "Invalid or corrupted data parameter", ERL_NIF_LATIN1));
+					enif_make_atom(env, "invalid_or_corrupted_parameter"),
+					enif_make_atom(env, "data"));
 	}
 
 	ExecutorDriverStatus status = executor_sendFrameworkMessage( state->executor_state, 
@@ -174,14 +176,15 @@ nif_executor_sendStatusUpdate(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	
 	if (!enif_inspect_binary(env, argv[0], &taskStatus_binary)) 
 	{
-		return enif_make_tuple2(env, 
+		return enif_make_tuple3(env, 
 					enif_make_atom(env, "argument_error"), 
-					enif_make_string(env, "Invalid or corrupted TaskStatus", ERL_NIF_LATIN1));
+					enif_make_atom(env, "invalid_or_corrupted_parameter"),
+					enif_make_atom(env, "task_status"));
 	}
 
 	ExecutorDriverStatus status = executor_sendStatusUpdate( state->executor_state, 
@@ -198,7 +201,7 @@ nif_executor_destroy(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 	{
 		return enif_make_tuple2(env, 
 			enif_make_atom(env, "state_error"), 
-			enif_make_string(env, "Executor has not been initiated. Call executor_init first.", ERL_NIF_LATIN1));
+			enif_make_atom(env, "executor_not_inited"));
 	}
 	executor_destroy(state->executor_state);
 	state->initilised = 0;

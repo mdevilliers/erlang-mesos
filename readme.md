@@ -45,3 +45,4 @@ Todo
 4. auto build the protobuffer files with gdb, clean up depenadancies
 5. c/c++ code review
 6. resiliance against crashes
+7. diazler
