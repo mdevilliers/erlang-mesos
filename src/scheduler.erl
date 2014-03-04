@@ -127,7 +127,7 @@ loop(Module,State) ->
                 unregister(scheduler_loop),
                 {shutdown_complete};        
         Any ->
-            io:format("other message from nif : ~p~n", [Any]),
+            io:format("SCHEDULER: UNKNOWN MESSAGE : ~p~n", [Any]),
             loop(Module,State)
     after
         1000 ->

@@ -29,8 +29,8 @@ struct state_t
 typedef struct state_t* state_ptr;
 
 typedef struct{
-	unsigned int length;
-	ErlNifBinary* obj;
+    unsigned int length;
+    ErlNifBinary* obj;
 } BinaryNifArray;
 
 #endif // MESOS_API_C_H
