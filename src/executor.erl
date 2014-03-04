@@ -92,7 +92,7 @@ loop(Module,State) ->
                 unregister(executor_loop),
                 {shutdown_complete};          
         Any ->
-            io:format("Other message from nif : ~p~n", [Any]),
+            io:format("EXECUTOR: UNKNOWN MESSAGE : ~p~n", [Any]),
             loop(Module,State)
     after
         1000 ->

@@ -77,7 +77,6 @@ destroy() ->
             scheduler_loop ! {internal_shudown},
             ok;
         Other ->
-        io:format("shutting down loop OTHER ~p ~n", [Other]),
             Other
     end.
 % main call back loop
