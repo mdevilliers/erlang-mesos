@@ -79,6 +79,7 @@ destroy() ->
         Other ->
             Other
     end.
+
 % main call back loop
 loop(Module,State) -> 
     receive     
@@ -128,9 +129,6 @@ loop(Module,State) ->
                 {shutdown_complete};        
         Any ->
             io:format("SCHEDULER: UNKNOWN MESSAGE : ~p~n", [Any]),
-            loop(Module,State)
-    after
-        1000 ->
             loop(Module,State)
     end.
 

@@ -12,50 +12,100 @@
 
 % private
 -export ([loop/2]).
--export([behaviour_info/1]).
-
-behaviour_info(callbacks) ->
-    [ {registered, 4}, 
-      {reregistered, 2}, 
-      {disconnected, 1}, 
-      {launchTask, 2},  
-      {killTask, 2}, 
-      {frameworkMessage, 2}, 
-      {shutdown, 1} , 
-      {error, 2}];
-behaviour_info(_Other) ->
-    undefined.
 
 -include_lib("include/mesos_pb.hrl").
 
-init(Module, State)->
+-type driver_state() :: driver_not_started |  driver_running | driver_aborted | driver_stopped | unknown.
+
+% callback specifications
+-callback registered(State :: any(), 
+            ExecutorInfo :: #'ExecutorInfo'{}, 
+            FrameworkInfo :: #'FrameworkInfo'{}, 
+            SlaveInfo :: #'SlaveInfo'{})-> {ok, State :: any()}.
+
+-callback reregistered(State :: any(),  
+            SlaveInfo :: #'SlaveInfo'{})-> {ok, State :: any()}.
+
+-callback disconnected(State :: any())-> {ok, State :: any()}.
+
+-callback launchTask(State :: any(),  
+            TaskInfo :: #'TaskInfo'{})-> {ok, State :: any()}.
+
+-callback killTask(State :: any(),  
+            TaskID :: #'TaskID'{})-> {ok, State :: any()}.
+
+-callback frameworkMessage(State :: any(),  
+            Message :: string())-> {ok, State :: any()}.
+
+-callback shutdown(State :: any())-> {ok, State :: any()}.
+
+-callback error(State :: any(),  
+            Message :: string())-> {ok, State :: any()}.    
+
+% implementation
+-spec init(Module :: module(), State :: any()) ->  { state_error, executor_already_inited}
+                        | {argument_error, invalid_or_corrupted_parameter, pid }
+                        | ok.
+init(Module, State) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
     register(executor_loop, Pid),
-    Result = nif_executor:init(Pid),
-    Result.
+    nif_executor:init(Pid).
 
+-spec start() -> { state_error, executor_not_inited} 
+                    | {ok, driver_running } 
+                    | {error, driver_state()}.
 start() ->
     nif_executor:start().
+
+-spec join() -> { state_error, executor_not_inited} 
+                    | {ok, driver_running } 
+                    | {error, driver_state()}.
 join() ->
     nif_executor:join().
+
+-spec abort() -> { state_error, executor_not_inited} 
+                    | {ok, driver_aborted } 
+                    | {error, driver_state()}.
 abort() ->
     nif_executor:abort().
+
+-spec stop() -> { state_error, executor_not_inited} 
+                    | {ok, driver_stopped } 
+                    | {error, driver_state()}.
 stop() ->       
     nif_executor:stop().
 
-sendFrameworkMessage(Data) ->
+
+-spec sendFrameworkMessage( Message :: string() ) -> 
+                          {ok, driver_running } 
+                        | {argument_error, invalid_or_corrupted_parameter, data }
+                        | {state_error, executor_not_inited} 
+                        | {error, driver_state()}.
+
+sendFrameworkMessage(Data) when is_list(Data) ->
     nif_executor:sendFrameworkMessage(Data).
-sendStatusUpdate(TaskStatus)->
+
+-spec sendStatusUpdate( TaskStatus :: #'TaskStatus'{} ) -> 
+                          {ok, driver_running } 
+                        | {argument_error, invalid_or_corrupted_parameter, task_status }
+                        | {state_error, executor_not_inited} 
+                        | {error, driver_state()}.
+
+sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
     nif_executor:sendStatusUpdate(TaskStatus).
+
+-spec destroy() -> ok | {state_error, executor_not_inited}.
+
 destroy() ->
     case nif_executor:destroy() of
-        {ok, Status} ->
+        ok->
             executor_loop ! {internal_shudown},
-            {ok, Status};
+            ok;
         Other ->
             Other
     end.
 
+% private
 loop(Module,State) -> 
     receive     
         {registered , ExecutorInfoBin, FrameworkInfoBin, SlaveInfoBin } ->            
@@ -93,8 +143,5 @@ loop(Module,State) ->
                 {shutdown_complete};          
         Any ->
             io:format("EXECUTOR: UNKNOWN MESSAGE : ~p~n", [Any]),
-            loop(Module,State)
-    after
-        1000 ->
             loop(Module,State)
     end.

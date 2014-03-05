@@ -1,18 +1,18 @@
 erlang-mesos
 ------------
 
-An erlang binding for mesos (http://mesos.apache.org/) 
+An erlang binding for mesos (http://mesos.apache.org/).
+
 
 Getting started
 ---------------
 
+sudo apt-get install g++ (TODO : complete the list)
+
+```
 git clone .....
 cd erlang-mesos
-
-Get going
----------
-
-sudo apt-get install g++ (TODO : complete the list)
+```
 
 Get the project dependancies
 
@@ -36,11 +36,19 @@ After that you should be all set with a
 How does it work
 ----------------
 
-Describe the various parts, callbacks
+erlang-mesos had been implemnted as a nif(http://www.erlang.org/doc/tutorial/nif.html).
+Messages are sent via the nif to mesos and mesos callbacks into erlang asynchronously. Although nifs are never ideal
+the asynchonous implmentaion of mesos lends itself nicely.
 
+The modules - scheduler.erl and executor.erl are directly equivilant to their C++ counterparts in mesos.
+To implement your own mesos scheduler or framework you implement the behaviours that they expose.
+
+There is an example framework (scheduler) and executor in the src directory.
 
 Example framework
 -----------------
+
+
 
 Example executor
 ----------------

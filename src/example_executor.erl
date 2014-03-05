@@ -43,10 +43,13 @@ disconnected(State) ->
 
 launchTask(State,TaskInfo) ->
     io:format("LaunchTask callback : ~p ~n", [TaskInfo]),
-    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskInfo#'TaskInfo'.task_id , state='TASK_RUNNING'}),
 
-    timer:sleep(5000),
-    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskInfo#'TaskInfo'.task_id , state='TASK_FINISHED'}),
+    TaskId = TaskInfo#'TaskInfo'.task_id,
+
+    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskId , state='TASK_RUNNING'}),
+
+    timer:sleep(5000), % do some work
+    executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskId , state='TASK_FINISHED'}),
     spawn(?MODULE, exit, []),
 
     {ok,State}.
