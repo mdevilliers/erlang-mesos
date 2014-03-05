@@ -1,6 +1,6 @@
 -module (nif_executor).
 
--include_lib("include/mesos.hrl").
+-include_lib("include/mesos_pb.hrl").
 
 -export ([  init/1,
             start/0,

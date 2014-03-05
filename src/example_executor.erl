@@ -2,7 +2,7 @@
 
 -behaviour (executor).
 
--include_lib("include/mesos.hrl").
+-include_lib("include/mesos_pb.hrl").
 
 % api
 -export ([init/0, exit/0]).    

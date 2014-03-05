@@ -12,7 +12,12 @@ cd erlang-mesos
 Dependancies
 ------------
 
+
+./rebar get-deps
 ./rebar compile
+
+
+
 
 How does it work
 ----------------

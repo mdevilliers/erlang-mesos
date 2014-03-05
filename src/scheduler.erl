@@ -22,7 +22,7 @@
 % private
 -export ([loop/2]).
 
--include_lib("include/mesos.hrl").
+-include_lib("include/mesos_pb.hrl").
 
 behaviour_info(callbacks) ->
     [ {registered, 3}, 

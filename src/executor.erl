@@ -26,7 +26,7 @@ behaviour_info(callbacks) ->
 behaviour_info(_Other) ->
     undefined.
 
--include_lib("include/mesos.hrl").
+-include_lib("include/mesos_pb.hrl").
 
 init(Module, State)->
     Pid = spawn(?MODULE, loop, [Module, State]),
