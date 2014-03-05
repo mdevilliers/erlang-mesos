@@ -1,0 +1,11 @@
+*.o
+*.beam
+*.plt
+.eunit
+deps
+ebin
+priv
+erl_crash.dump
+include/mesos_pb.hrl
+src/mesos_pb.erl
+
