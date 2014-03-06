@@ -160,6 +160,7 @@ message MasterInfo {
   required string id = 1;
   required uint32 ip = 2;
   required uint32 port = 3 [default = 5050];
+  optional string pid = 4;
 }
 
 
@@ -394,6 +395,7 @@ message TaskStatus {
   optional string message = 4; // Possible message explaining state.
   optional bytes data = 3;
   optional SlaveID slave_id = 5;
+  optional double timestamp = 6;
 }
 
 
@@ -434,8 +436,8 @@ message Parameter {
   required string key = 1;
   required string value = 2;
 }
- 
- 
+
+
 /**
  * Collection of Parameter.
  */
