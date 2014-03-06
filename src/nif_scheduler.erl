@@ -45,7 +45,7 @@ join() ->
 abort() ->
     nif_scheduler_abort().
 
-stop(Failover) when   is_integer(Failover), 
+stop(Failover) when is_integer(Failover), 
                                 Failover > -1, 
                                 Failover < 2 ->
     nif_scheduler_stop(Failover).
@@ -64,10 +64,10 @@ killTask(TaskId) when is_record(TaskId,'TaskID')->
 reviveOffers() ->
     nif_scheduler_reviveOffers().
 
-sendFrameworkMessage(ExecuterId,SlaveId,Data) when    is_record(ExecuterId, 'ExecutorID'),
+sendFrameworkMessage(ExecutorId,SlaveId,Data) when    is_record(ExecutorId, 'ExecutorID'),
                                                       is_record(SlaveId, 'SlaveID'),
                                                       is_list(Data)->
-    nif_scheduler_sendFrameworkMessage(mesos_pb:encode_msg(ExecuterId), mesos_pb:encode_msg(SlaveId), Data).
+    nif_scheduler_sendFrameworkMessage(mesos_pb:encode_msg(ExecutorId), mesos_pb:encode_msg(SlaveId), Data).
 
 requestResources(Requests) when is_list(Requests) ->
     EncodedRequests = encode_array(Requests, []),
@@ -78,14 +78,14 @@ reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
     nif_scheduler_reconcileTasks(EncodedTaskStatus).
 
 launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
-                                                is_list(TaskInfos) ->
+                                      is_list(TaskInfos) ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     Filter = #'Filters'{},
     nif_scheduler_launchTasks(mesos_pb:encode_msg(OfferId), EncodedTaskInfos, mesos_pb:encode_msg(Filter)).
 
 launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'), 
-                                                         is_list(TaskInfos),
-                                                         is_record(Filter, 'Filters') ->
+                                              is_list(TaskInfos),
+                                              is_record(Filter, 'Filters') ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     nif_scheduler_launchTasks(mesos_pb:encode_msg(OfferId), EncodedTaskInfos, mesos_pb:encode_msg(Filter)).
 
