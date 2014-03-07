@@ -67,7 +67,8 @@ resourceOffers(State, Offer) ->
     % example to launch a local executor - the example_executor.erl
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
-    Command = "cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
+
+    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
 
     {_,{H,M,S}} = calendar:local_time(),
 
@@ -93,10 +94,10 @@ offerRescinded(State, OfferID) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
 
-statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_}) ->
+statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_}) ->
     io:format("StatusUpdate callback : ~p  -> task running current tasks.~n", ['TASK_RUNNING']),
     {ok,State};
-statusUpdate( State, {'TaskStatus',{'TaskID',_},Message,_,_,_}) ->
+statusUpdate( State, {'TaskStatus',{'TaskID',_},Message,_,_,_,_}) ->
     io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
     State1 = State#framework_state{tasks_started = 0},
     {ok,State1};
