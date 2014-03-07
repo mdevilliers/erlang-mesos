@@ -86,7 +86,7 @@ offerRescinded(State, OfferID) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
 
-statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_LOST',_,_,_,_}) ->
+statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_}) ->
     io:format("StatusUpdate callback : ~p  -> task running current tasks.~n", ['TASK_RUNNING']),
     {ok,State};
 statusUpdate( State, {'TaskStatus',{'TaskID',_},Message,_,_,_,_}) ->
