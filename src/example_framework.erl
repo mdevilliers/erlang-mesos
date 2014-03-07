@@ -60,7 +60,7 @@ resourceOffers(State, Offer) ->
     % example to launch a local executor - the example_executor.erl
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
-    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -run example_executor init",
+    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
 
     {_,{H,M,S}} = calendar:local_time(),
 
