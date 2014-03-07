@@ -14,8 +14,7 @@
 -export ([loop/2]).
 
 -include_lib("include/mesos_pb.hrl").
-
--type driver_state() :: driver_not_started |  driver_running | driver_aborted | driver_stopped | unknown.
+-include_lib("include/mesos_erlang.hrl").
 
 % callback specifications
 -callback registered(State :: any(), 
@@ -23,24 +22,19 @@
             FrameworkInfo :: #'FrameworkInfo'{}, 
             SlaveInfo :: #'SlaveInfo'{})-> {ok, State :: any()}.
 
--callback reregistered(State :: any(),  
-            SlaveInfo :: #'SlaveInfo'{})-> {ok, State :: any()}.
+-callback reregistered(State :: any(), SlaveInfo :: #'SlaveInfo'{}) -> {ok, State :: any()}.
 
--callback disconnected(State :: any())-> {ok, State :: any()}.
+-callback disconnected(State :: any()) -> {ok, State :: any()}.
 
--callback launchTask(State :: any(),  
-            TaskInfo :: #'TaskInfo'{})-> {ok, State :: any()}.
+-callback launchTask(State :: any(), TaskInfo :: #'TaskInfo'{}) -> {ok, State :: any()}.
 
--callback killTask(State :: any(),  
-            TaskID :: #'TaskID'{})-> {ok, State :: any()}.
+-callback killTask(State :: any(), TaskID :: #'TaskID'{}) -> {ok, State :: any()}.
 
--callback frameworkMessage(State :: any(),  
-            Message :: string())-> {ok, State :: any()}.
+-callback frameworkMessage(State :: any(), Message :: string()) -> {ok, State :: any()}.
 
--callback shutdown(State :: any())-> {ok, State :: any()}.
+-callback shutdown(State :: any()) -> {ok, State :: any()}.
 
--callback error(State :: any(),  
-            Message :: string())-> {ok, State :: any()}.    
+-callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.    
 
 % implementation
 -spec init(Module :: module(), State :: any()) ->  { state_error, executor_already_inited}
@@ -51,30 +45,21 @@ init(Module, State) ->
     register(executor_loop, Pid),
     nif_executor:init(Pid).
 
--spec start() -> { state_error, executor_not_inited} 
-                    | {ok, driver_running } 
-                    | {error, driver_state()}.
+-spec start() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.
 start() ->
     nif_executor:start().
 
--spec join() -> { state_error, executor_not_inited} 
-                    | {ok, driver_running } 
-                    | {error, driver_state()}.
+-spec join() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.
 join() ->
     nif_executor:join().
 
--spec abort() -> { state_error, executor_not_inited} 
-                    | {ok, driver_aborted } 
-                    | {error, driver_state()}.
+-spec abort() -> { state_error, executor_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 abort() ->
     nif_executor:abort().
 
--spec stop() -> { state_error, executor_not_inited} 
-                    | {ok, driver_stopped } 
-                    | {error, driver_state()}.
+-spec stop() -> { state_error, executor_not_inited} | {ok, driver_stopped } | {error, driver_state()}.
 stop() ->       
     nif_executor:stop().
-
 
 -spec sendFrameworkMessage( Message :: string() ) -> 
                           {ok, driver_running } 

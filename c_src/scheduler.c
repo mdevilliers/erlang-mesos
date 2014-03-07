@@ -61,7 +61,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_tuple3(env, 
                     enif_make_atom(env, "argument_error"), 
                     enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "masterurl"));
+                    enif_make_atom(env, "master_info"));
     }
 
     if(argc == 4 )
@@ -71,7 +71,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
             return enif_make_tuple3(env, 
                         enif_make_atom(env, "argument_error"), 
                         enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                        enif_make_atom(env, "credentials"));
+                        enif_make_atom(env, "credential"));
             
         }
         state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 1, &credentials_binary);

@@ -20,6 +20,13 @@
 
 -record (framework_state, { tasks_started = 0 }).
 
+%
+% Example framework (scheduler)
+%
+% Starts up, listens form resource offers, starts one task (example executor), listens for updates
+% When the task stops listens from more resource offers....
+%
+% 
 % api
 init()->
 
@@ -60,6 +67,7 @@ resourceOffers(State, Offer) ->
     % example to launch a local executor - the example_executor.erl
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
+
     Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
 
     {_,{H,M,S}} = calendar:local_time(),

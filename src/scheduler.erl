@@ -2,6 +2,7 @@
 
 %api
 -export([init/4,
+        init/5,
         start/0,
         join/0,
         abort/0,
@@ -17,60 +18,183 @@
         launchTasks/3,
         destroy/0]).
 
--export([behaviour_info/1]).
-
 % private
 -export ([loop/2]).
 
 -include_lib("include/mesos_pb.hrl").
+-include_lib("include/mesos_erlang.hrl").
 
-behaviour_info(callbacks) ->
-    [ {registered, 3}, 
-      {reregistered, 2}, 
-      {disconnected, 1}, 
-      {offerRescinded, 2}, 
-      {statusUpdate, 2}, 
-      {frameworkMessage, 4}, 
-      {slaveLost, 2}, 
-      {executorLost, 4} , 
-      {error, 2}, 
-      {resourceOffers, 2}];
-behaviour_info(_Other) ->
-    undefined.
+% callback specifications
+-callback registered(State :: any(), 
+            FrameworkInfo :: #'FrameworkInfo'{}, 
+            MasterInfo :: #'MasterInfo'{}) -> {ok, State :: any()}.
+
+-callback reregistered(State :: any(), MasterInfo :: #'MasterInfo'{}) -> {ok, State :: any()}.
+
+-callback disconnected(State :: any()) -> {ok, State :: any()}.
+
+-callback resourceOffers(State :: any(), Offer :: #'Offer'{}) -> {ok, State :: any()}.
+
+-callback offerRescinded(State :: any(), OfferID :: #'OfferID'{}) -> {ok, State :: any()}.
+
+-callback statusUpdate(State :: any(), TaskStatus :: #'TaskStatus'{}) -> {ok, State :: any()}.
+
+-callback frameworkMessage(State :: any(),  
+            ExecutorId :: #'ExecutorID'{},
+            SlaveId :: #'SlaveID'{},
+            Message :: string()) -> {ok, State :: any()}.
+
+-callback slaveLost(State :: any(), SlaveId :: #'SlaveID'{}) -> {ok, State :: any()}.
+
+-callback executorLost(State :: any(),  
+            ExecutorId :: #'ExecutorID'{},
+            SlaveId :: #'SlaveID'{},
+            Status :: pos_integer()) -> {ok, State :: any()}.
+
+-callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.   
+
+% implementation
+-spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()) ->  
+                          {state_error, scheduler_already_inited}
+                        | {argument_error, invalid_or_corrupted_parameter, pid }
+                        | {argument_error, invalid_or_corrupted_parameter, framework_info}
+                        | {argument_error, invalid_or_corrupted_parameter, master_info}
+                        | ok.
 
 init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                 is_list(MasterLocation) ->
+                                                        is_list(MasterLocation) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
     register(scheduler_loop, Pid),
-    Result = nif_scheduler:init(Pid, FrameworkInfo, MasterLocation),
-    Result.
+    nif_scheduler:init(Pid, FrameworkInfo, MasterLocation).
 
+-spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{},MasterLocation :: string(),Credential :: #'Credential'{},State :: any()) ->  
+                          {state_error, scheduler_already_inited}
+                        | {argument_error, invalid_or_corrupted_parameter, pid }
+                        | {argument_error, invalid_or_corrupted_parameter, framework_info}
+                        | {argument_error, invalid_or_corrupted_parameter, master_info}
+                        | {argument_error, invalid_or_corrupted_parameter, credential}
+                        | ok.
+init(Module, FrameworkInfo, MasterLocation, Credential, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                        is_list(MasterLocation) ->
+    Pid = spawn(?MODULE, loop, [Module, State]),
+    register(scheduler_loop, Pid),
+    nif_scheduler:init(Pid, FrameworkInfo, MasterLocation, Credential).
+
+-spec start() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
 start() ->
     nif_scheduler:start().
+
+-spec join() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
 join() ->
     nif_scheduler:join().
+
+-spec abort() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 abort() ->
     nif_scheduler:abort().
-stop(Failover) ->
+
+-spec stop(integer()) -> { state_error, scheduler_not_inited} | {ok, driver_stopped } | {error, driver_state()}.    
+stop(Failover) when is_integer(Failover), 
+                                Failover > -1, 
+                                Failover < 2 ->
     nif_scheduler:stop(Failover).
-declineOffer(OfferId)->
-    nif_scheduler:declineOffer(OfferId).  
-declineOffer(OfferId,Filter) ->
+
+-spec declineOffer( OfferId :: #'OfferID'{}) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
+                    | {error, driver_state()}.
+
+declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
+    nif_scheduler:declineOffer(OfferId). 
+
+-spec declineOffer( OfferId :: #'OfferID'{},
+                    Filter :: #'Filters'{}) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
+                    | {argument_error, invalid_or_corrupted_parameter, filters}
+                    | {error, driver_state()}.
+
+declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
+                                  is_record(Filter, 'Filters') ->
     nif_scheduler:declineOffer(OfferId,Filter).
-killTask(TaskId)->
+
+-spec killTask( TaskId :: #'TaskID'{}) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, task_id}
+                    | {error, driver_state()}.
+
+killTask(TaskId) when is_record(TaskId,'TaskID') ->
     nif_scheduler:killTask(TaskId).
+
+-spec reviveOffers() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
+
 reviveOffers()->
     nif_scheduler:reviveOffers().
-sendFrameworkMessage(ExecuterId,SlaveId,Data) ->
-    nif_scheduler:sendFrameworkMessage(ExecuterId,SlaveId,Data).
-requestResources(Requests)->
+
+-spec sendFrameworkMessage( ExecutorId :: #'ExecutorID'{},
+                            SlaveId :: #'SlaveID'{},
+                            Data ::string()) 
+                            -> { state_error, scheduler_not_inited} 
+                            | {ok, driver_running } 
+                            | {argument_error, invalid_or_corrupted_parameter, executor_id}
+                            | {argument_error, invalid_or_corrupted_parameter, slave_id}
+                            | {argument_error, invalid_or_corrupted_parameter, data}
+                            | {error, driver_state()}.
+
+sendFrameworkMessage(ExecutorId,SlaveId,Data) when is_record(ExecutorId, 'ExecutorID'),
+                                                   is_record(SlaveId, 'SlaveID'),
+                                                   is_list(Data)->
+    nif_scheduler:sendFrameworkMessage(ExecutorId,SlaveId,Data).
+
+
+-spec requestResources( Requests :: [ #'Request'{} ]) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, request_array}
+                    | {error, driver_state()}.
+
+requestResources(Requests) when is_list(Requests) ->
     nif_scheduler:requestResources(Requests).
-reconcileTasks(TaskStatus)->
+
+-spec reconcileTasks( TaskStatus :: [ #'TaskStatus'{} ]) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, task_status_array}
+                    | {error, driver_state()}.
+
+reconcileTasks(TaskStatus)when is_list(TaskStatus)->
     nif_scheduler:reconcileTasks(TaskStatus).
-launchTasks(OfferId, TaskInfos)->
+
+-spec launchTasks(  OfferId :: #'OfferID'{}, 
+                    TaskInfos :: [ #'TaskInfo'{}]) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
+                    | {argument_error, invalid_or_corrupted_parameter, task_info_array}
+                    | {error, driver_state()}.
+
+launchTasks(OfferId, TaskInfos) when is_record(OfferId, 'OfferID'), 
+                                     is_list(TaskInfos) ->
     nif_scheduler:launchTasks(OfferId, TaskInfos).
-launchTasks(OfferId, TaskInfos, Filter)->
+
+-spec launchTasks(  OfferId :: #'OfferID'{}, 
+                    TaskInfos :: [ #'TaskInfo'{}],
+                    Filter :: #'Filters'{}) 
+                    -> { state_error, scheduler_not_inited} 
+                    | {ok, driver_running } 
+                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
+                    | {argument_error, invalid_or_corrupted_parameter, task_info_array}
+                    | {argument_error, invalid_or_corrupted_parameter, filters}
+                    | {error, driver_state()}.
+
+launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'), 
+                                             is_list(TaskInfos),
+                                             is_record(Filter, 'Filters') ->
     nif_scheduler:launchTasks(OfferId, TaskInfos, Filter).
+
+-spec destroy() -> ok | {state_error, scheduler_not_inited}.
 destroy() ->
     case nif_scheduler:destroy() of
         ok ->
@@ -93,8 +217,10 @@ loop(Module,State) ->
                 Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
                  {ok, State1} = Module:resourceOffers(State,Offer),
                 loop(Module, State1);
-        {reregistered} ->
-                {ok, State1} = Module:reregistered(State),
+        {reregistered, MasterInfoBin} ->
+                MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
+                MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
+                {ok, State1} = Module:reregistered(State,MasterInfo2),
                 loop(Module,State1);
         {disconnected} ->
                 {ok, State1} = Module:disconnected(State),

@@ -7,6 +7,9 @@
 % api
 -export ([init/0, exit/0]).    
 
+% private
+-export ([start/0]).
+
 % from gen_executor
 -export ([registered/4, 
           reregistered/2, 
@@ -17,15 +20,26 @@
           shutdown/1, 
           error/2]).
 
+%
+% Example executor
+% 
+% Starts up, sends a framework message, sends some task updates, sleeps for a while then closes.
+%
+
 init()->
+    spawn(?MODULE, start, []), % register with mesos
+    timer:sleep(infinity), % block while I do my business
+    ok.
+
+start()->
     ok = executor:init(?MODULE, []),
-    {ok,Status} = executor:start(),
-    executor:sendFrameworkMessage("hello from the executor's init method"),
-    Status.
+    {ok,_} = executor:start(),
+    executor:sendFrameworkMessage("hello from the executor's start method").
 
 exit() ->
     {ok,driver_stopped} = executor:stop(), % stop the executor
     ok = executor:destroy(), % destroy and cleanup the nif
+    io:format("Stopping! Bye...."),
     init:stop(). % exit the process
 
 % call backs
@@ -50,8 +64,8 @@ launchTask(State,TaskInfo) ->
 
     timer:sleep(5000), % do some work
     executor:sendStatusUpdate(#'TaskStatus'{task_id = TaskId , state='TASK_FINISHED'}),
-    spawn(?MODULE, exit, []),
-
+    timer:sleep(50), % artifically slow the process down just to send the task_finished message 
+    spawn(?MODULE, exit, []), % start closing down
     {ok,State}.
 
 killTask(State,TaskID) ->
