@@ -2,6 +2,7 @@ erlang-mesos
 ------------
 
 An erlang binding for [mesos](http://mesos.apache.org/).
+Currently working towards supprt for the 0.18.0 version.
 
 How does it work
 ----------------
@@ -20,7 +21,8 @@ Getting started
 ---------------
 
 [Install mesos](http://mesos.apache.org/gettingstarted/) 
-Install protobuf version 2.5
+
+Install protobuf version 2.5 - mesos 0.18.0 requires a release >= 2.5
 
 sudo apt-get install g++ gcc 
 
