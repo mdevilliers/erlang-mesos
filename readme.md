@@ -76,9 +76,7 @@ GLOG_v=1 erl -pa ebin
 Todo
 ----
 
-1. upgrade to mesos 0.16 - IN PROGRESS
-2. auto build the protobuffer files with gdb -DONE (ISH)
-3. c/c++ code review
+1. c/c++ code review
 
 Thanks
 ------
