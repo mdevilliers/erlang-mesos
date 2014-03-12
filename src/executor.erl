@@ -30,13 +30,13 @@
             sendStatusUpdate/1,
             destroy/0]).
 
-% private
+%% private
 -export ([loop/2]).
 
 -include_lib("include/mesos_pb.hrl").
 -include_lib("include/mesos_erlang.hrl").
 
-% callback specifications
+%% callback specifications
 -callback registered(State :: any(), 
             ExecutorInfo :: #'ExecutorInfo'{}, 
             FrameworkInfo :: #'FrameworkInfo'{}, 
@@ -56,7 +56,10 @@
 
 -callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.    
 
-% implementation
+%% -----------------------------------------------------------------------------------------
+
+%% implementation
+
 -spec init(Module :: module(), State :: any()) ->  { state_error, executor_already_inited}
                         | {argument_error, invalid_or_corrupted_parameter, pid }
                         | ok.
@@ -64,22 +67,31 @@ init(Module, State) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
     register(executor_loop, Pid),
     nif_executor:init(Pid).
+%% -----------------------------------------------------------------------------------------
 
 -spec start() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.
 start() ->
     nif_executor:start().
 
+%% -----------------------------------------------------------------------------------------
+
 -spec join() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.
 join() ->
     nif_executor:join().
+
+%% -----------------------------------------------------------------------------------------
 
 -spec abort() -> { state_error, executor_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 abort() ->
     nif_executor:abort().
 
+%% -----------------------------------------------------------------------------------------
+
 -spec stop() -> { state_error, executor_not_inited} | {ok, driver_stopped } | {error, driver_state()}.
 stop() ->       
     nif_executor:stop().
+
+%% -----------------------------------------------------------------------------------------
 
 -spec sendFrameworkMessage( Message :: string() ) -> 
                           {ok, driver_running } 
@@ -89,6 +101,7 @@ stop() ->
 
 sendFrameworkMessage(Data) when is_list(Data) ->
     nif_executor:sendFrameworkMessage(Data).
+%% -----------------------------------------------------------------------------------------
 
 -spec sendStatusUpdate( TaskStatus :: #'TaskStatus'{} ) -> 
                           {ok, driver_running } 
@@ -98,6 +111,7 @@ sendFrameworkMessage(Data) when is_list(Data) ->
 
 sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
     nif_executor:sendStatusUpdate(TaskStatus).
+%% -----------------------------------------------------------------------------------------
 
 -spec destroy() -> ok | {state_error, executor_not_inited}.
 
@@ -109,6 +123,9 @@ destroy() ->
         Other ->
             Other
     end.
+    
+%% -----------------------------------------------------------------------------------------
+
 
 % private
 loop(Module,State) -> 

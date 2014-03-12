@@ -73,6 +73,8 @@
 
 -callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.   
 
+%% -----------------------------------------------------------------------------------------
+
 % implementation
 -spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()) ->  
                           {state_error, scheduler_already_inited}
@@ -87,6 +89,8 @@ init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo,
     register(scheduler_loop, Pid),
     nif_scheduler:init(Pid, FrameworkInfo, MasterLocation).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{},MasterLocation :: string(),Credential :: #'Credential'{},State :: any()) ->  
                           {state_error, scheduler_already_inited}
                         | {argument_error, invalid_or_corrupted_parameter, pid }
@@ -100,17 +104,27 @@ init(Module, FrameworkInfo, MasterLocation, Credential, State) when is_record(Fr
     register(scheduler_loop, Pid),
     nif_scheduler:init(Pid, FrameworkInfo, MasterLocation, Credential).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec start() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
 start() ->
     nif_scheduler:start().
+
+%% -----------------------------------------------------------------------------------------
+
 
 -spec join() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
 join() ->
     nif_scheduler:join().
 
+%% -----------------------------------------------------------------------------------------
+
+
 -spec abort() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 abort() ->
     nif_scheduler:abort().
+
+%% -----------------------------------------------------------------------------------------
 
 -spec stop(integer()) -> { state_error, scheduler_not_inited} | {ok, driver_stopped } | {error, driver_state()}.    
 stop(Failover) when is_integer(Failover), 
@@ -118,11 +132,14 @@ stop(Failover) when is_integer(Failover),
                                 Failover < 2 ->
     nif_scheduler:stop(Failover).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec declineOffer( OfferId :: #'OfferID'{}) 
                     -> { state_error, scheduler_not_inited} 
                     | {ok, driver_running } 
                     | {argument_error, invalid_or_corrupted_parameter, offer_id}
                     | {error, driver_state()}.
+
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     nif_scheduler:declineOffer(OfferId). 
@@ -139,6 +156,8 @@ declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
                                   is_record(Filter, 'Filters') ->
     nif_scheduler:declineOffer(OfferId,Filter).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec killTask( TaskId :: #'TaskID'{}) 
                     -> { state_error, scheduler_not_inited} 
                     | {ok, driver_running } 
@@ -148,10 +167,14 @@ declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
 killTask(TaskId) when is_record(TaskId,'TaskID') ->
     nif_scheduler:killTask(TaskId).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec reviveOffers() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 
 reviveOffers()->
     nif_scheduler:reviveOffers().
+
+%% -----------------------------------------------------------------------------------------
 
 -spec sendFrameworkMessage( ExecutorId :: #'ExecutorID'{},
                             SlaveId :: #'SlaveID'{},
@@ -168,6 +191,7 @@ sendFrameworkMessage(ExecutorId,SlaveId,Data) when is_record(ExecutorId, 'Execut
                                                    is_list(Data)->
     nif_scheduler:sendFrameworkMessage(ExecutorId,SlaveId,Data).
 
+%% -----------------------------------------------------------------------------------------
 
 -spec requestResources( Requests :: [ #'Request'{} ]) 
                     -> { state_error, scheduler_not_inited} 
@@ -178,6 +202,8 @@ sendFrameworkMessage(ExecutorId,SlaveId,Data) when is_record(ExecutorId, 'Execut
 requestResources(Requests) when is_list(Requests) ->
     nif_scheduler:requestResources(Requests).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec reconcileTasks( TaskStatus :: [ #'TaskStatus'{} ]) 
                     -> { state_error, scheduler_not_inited} 
                     | {ok, driver_running } 
@@ -186,6 +212,8 @@ requestResources(Requests) when is_list(Requests) ->
 
 reconcileTasks(TaskStatus)when is_list(TaskStatus)->
     nif_scheduler:reconcileTasks(TaskStatus).
+
+%% -----------------------------------------------------------------------------------------
 
 -spec launchTasks(  OfferId :: #'OfferID'{}, 
                     TaskInfos :: [ #'TaskInfo'{}]) 
@@ -214,6 +242,8 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
                                              is_record(Filter, 'Filters') ->
     nif_scheduler:launchTasks(OfferId, TaskInfos, Filter).
 
+%% -----------------------------------------------------------------------------------------
+
 -spec destroy() -> ok | {state_error, scheduler_not_inited}.
 destroy() ->
     case nif_scheduler:destroy() of
@@ -223,6 +253,7 @@ destroy() ->
         Other ->
             Other
     end.
+%% -----------------------------------------------------------------------------------------
 
 % main call back loop
 loop(Module,State) -> 

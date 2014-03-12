@@ -3,8 +3,24 @@ erlang-mesos
 
 An erlang binding for [mesos](http://mesos.apache.org/).
 
+How does it work
+----------------
+
+erlang-mesos had been implemented as a [nif](http://www.erlang.org/doc/tutorial/nif.html).
+Messages are sent via the nif to mesos and mesos callbacks into erlang asynchronously. Although nifs are never ideal
+the asynchonous implmentaion of mesos lends itself nicely in this case.
+
+The modules - scheduler.erl and executor.erl are directly equivialant to their counterparts in mesos.
+To add your own mesos scheduler or framework you implement the behaviours that they expose.
+
+There is an example framework (scheduler) and executor in the src directory.
+
+
 Getting started
 ---------------
+
+[Install mesos](http://mesos.apache.org/gettingstarted/) 
+Install protobuf version 2.5
 
 sudo apt-get install g++ gcc 
 
@@ -35,28 +51,19 @@ After that you should be all set with a
 
 ```
 
-To run the example framework from a 
+To run the example framework from a command window
 
 ```
+
+erl -pa ebin 
+
+
 example_framework:init().
 
 ```
 
 Note this will only work on a single node (development) cluster due to the way the example executor is run.
 This is only for convenience whilst developing.
-
-
-How does it work
-----------------
-
-erlang-mesos had been implemented as a [nif](http://www.erlang.org/doc/tutorial/nif.html).
-Messages are sent via the nif to mesos and mesos callbacks into erlang asynchronously. Although nifs are never ideal
-the asynchonous implmentaion of mesos lends itself nicely in this case.
-
-The modules - scheduler.erl and executor.erl are directly equivialant to their counterparts in mesos.
-To implement your own mesos scheduler or framework you implement the behaviours that they expose.
-
-There is an example framework (scheduler) and executor in the src directory. 
 
 Best Practice
 -------------
