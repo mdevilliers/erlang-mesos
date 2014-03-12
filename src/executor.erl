@@ -33,8 +33,8 @@
 %% private
 -export ([loop/2]).
 
--include_lib("include/mesos_pb.hrl").
--include_lib("include/mesos_erlang.hrl").
+-include_lib("mesos_pb.hrl").
+-include_lib("mesos_erlang.hrl").
 
 %% callback specifications
 -callback registered(State :: any(), 

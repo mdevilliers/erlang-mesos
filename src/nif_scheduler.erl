@@ -20,7 +20,7 @@
 
 -module (nif_scheduler).
 
--include_lib("include/mesos_pb.hrl").
+-include_lib("mesos_pb.hrl").
 
 -export ([  init/4,
             init/3,
