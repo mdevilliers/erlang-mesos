@@ -2,7 +2,7 @@ erlang-mesos
 ------------
 
 An erlang binding for [mesos](http://mesos.apache.org/).
-Currently working towards supprt for the 0.18.0 version.
+Currently working towards support for the 0.18.0 version.
 
 How does it work
 ----------------
