@@ -29,21 +29,18 @@ sudo apt-get install g++ gcc
 ```
 git clone .....
 cd erlang-mesos
-
 ```
 
 Get the project dependancies
 
 ```
 ./rebar get-deps
-
 ```
 
 Compile the application including the generated modules from the .proto file
 
 ```
 ./rebar compile
-
 ```
 
 After that you should be all set with a 
@@ -56,12 +53,8 @@ After that you should be all set with a
 To run the example framework from a command window
 
 ```
-
 erl -pa ebin 
-
-
 example_framework:init().
-
 ```
 
 Note this will only work on a single node (development) cluster due to the way the example executor is run.
@@ -81,11 +74,12 @@ To debug mesos you can use the following enviromental variable before starting u
 GLOG_v=1 erl -pa ebin
 ```
 
-
 Todo
 ----
 
 1. c/c++ code review
+2. investigate using a port rather than a nif
+
 
 Thanks
 ------
