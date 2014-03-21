@@ -16,6 +16,7 @@ To add your own mesos scheduler or framework you implement the behaviours that t
 
 There is an example framework (scheduler) and executor in the src directory.
 
+There is also an example of using erlang-mesos in an OTP application at [merkxx](https://github.com/mdevilliers/merkxx).
 
 Getting started
 ---------------
