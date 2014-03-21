@@ -33,7 +33,7 @@
 
 -on_load(init/0).
 
--define(APPNAME, nif_executor).
+-define(APPNAME, erlang_mesos).
 -define(LIBNAME, executor).
 
 init(Pid) when is_pid(Pid) ->

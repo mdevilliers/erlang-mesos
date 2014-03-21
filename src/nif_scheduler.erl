@@ -41,7 +41,7 @@
 
 -on_load(init/0).
 
--define(APPNAME, nif_scheduler).
+-define(APPNAME, erlang_mesos).
 -define(LIBNAME, scheduler).
 
 init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid), 
