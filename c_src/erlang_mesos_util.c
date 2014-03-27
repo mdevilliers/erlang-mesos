@@ -21,7 +21,7 @@
 #include "erl_nif.h"
 
 //helper method to turn status into an erlang atom
-static ERL_NIF_TERM get_atom_from_status(ErlNifEnv* env, int status)
+ERL_NIF_TERM get_atom_from_status(ErlNifEnv* env, int status)
 {
     if(status == 1) //DRIVER_NOT_STARTED
     {   
@@ -45,7 +45,7 @@ static ERL_NIF_TERM get_atom_from_status(ErlNifEnv* env, int status)
 }
 
 //helper method to return status to erlang
-static ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, int status)
+ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, int status)
 {
     if(status == 2) // DRIVER_RUNNING
     {
@@ -61,7 +61,7 @@ static ERL_NIF_TERM get_return_value_from_status(ErlNifEnv* env, int status)
 }
 
 //helper method to process an array of binary objects 
-static int inspect_array_of_binary_objects(ErlNifEnv* env, ERL_NIF_TERM term, ErlNifBinary * binary_arr )
+int inspect_array_of_binary_objects(ErlNifEnv* env, ERL_NIF_TERM term, ErlNifBinary * binary_arr )
 {
     ERL_NIF_TERM head, tail;
     tail = term;
