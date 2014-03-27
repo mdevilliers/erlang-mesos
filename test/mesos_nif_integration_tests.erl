@@ -29,11 +29,28 @@ inited_scheduler_can_not_be_reinited_test()->
     MasterLocation = ?MASTER_LOCATION,
 
     ok = scheduler:init(test_framework, FrameworkInfo, MasterLocation, []),
-
-    timer:sleep(1000),
     {state_error, scheduler_already_inited} = scheduler:init(test_framework, FrameworkInfo, MasterLocation, []),
+
+    ok = scheduler:destroy(),
 
     meck:unload(test_framework).
 
+unknown_message_to_scheduler_will_not_crash_scheduler_test() ->
 
+    meck:new(test_framework, [non_strict]), 
+
+    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+
+    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+    MasterLocation = ?MASTER_LOCATION,
+
+    ok = scheduler:init(test_framework, FrameworkInfo, MasterLocation, []),
+
+    CheekyPid = whereis(scheduler_loop),
+    CheekyPid ! {booya},
+    CheekyPid = whereis(scheduler_loop),
+
+    ok = scheduler:destroy(),
+    meck:unload(test_framework).
 
