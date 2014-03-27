@@ -65,8 +65,13 @@
                         | ok.
 init(Module, State) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
-    register(executor_loop, Pid),
-    nif_executor:init(Pid).
+
+    try register(executor_loop, Pid) of
+        true -> nif_executor:init(Pid)
+    catch
+         error:badarg ->  {state_error, executor_already_inited}
+    end.
+
 %% -----------------------------------------------------------------------------------------
 
 -spec start() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.

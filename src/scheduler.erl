@@ -86,8 +86,12 @@
 init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                         is_list(MasterLocation) ->
     Pid = spawn(?MODULE, loop, [Module, State]),
-    register(scheduler_loop, Pid),
-    nif_scheduler:init(Pid, FrameworkInfo, MasterLocation).
+
+    try register(scheduler_loop, Pid) of
+        true -> nif_scheduler:init(Pid, FrameworkInfo, MasterLocation)
+    catch
+         error:badarg ->  {state_error, scheduler_already_inited}
+    end.
 
 %% -----------------------------------------------------------------------------------------
 
