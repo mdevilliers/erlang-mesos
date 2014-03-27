@@ -358,7 +358,7 @@ nif_scheduler_requestResources(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv
     }
 
     ErlNifBinary binary_arr[length];
-    if(!inspect_array_of_binary_objects(env, argv[0], &binary_arr ))
+    if(!inspect_array_of_binary_objects(env, argv[0], binary_arr ))
     {
         return enif_make_tuple3(env, 
                     enif_make_atom(env, "argument_error"), 
@@ -406,7 +406,7 @@ nif_scheduler_reconcileTasks(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
     }
     
     ErlNifBinary binary_arr[length];
-    if(!inspect_array_of_binary_objects(env, argv[0], &binary_arr ))
+    if(!inspect_array_of_binary_objects(env, argv[0], binary_arr ))
     {
         return enif_make_tuple3(env, 
                     enif_make_atom(env, "argument_error"), 
@@ -465,7 +465,7 @@ nif_scheduler_launchTasks(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     
     ErlNifBinary task_info_binary_arr[length];
 
-    if(!inspect_array_of_binary_objects(env, argv[1], &task_info_binary_arr ))
+    if(!inspect_array_of_binary_objects(env, argv[1], task_info_binary_arr ))
     {
         return enif_make_tuple3(env, 
                     enif_make_atom(env, "argument_error"), 
