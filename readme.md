@@ -64,7 +64,7 @@ This is only for convenience whilst developing.
 Best Practice
 -------------
 
-erlang-mesos is a new library interfacing over a nif to a rapidly changing library so for the love of all things holy run please in another erlang node....maybe on mesos!
+erlang-mesos is a new library interfacing over a nif to a rapidly changing library so at least initally I would reccomend running it in another erlang node.
 
 Help
 -----
