@@ -24,7 +24,7 @@
 -include_lib("mesos_pb.hrl").
 
 % api
--export ([init/0, exit/0]).
+-export ([init/0,init/1, exit/0]).
 
 % from scheduler
 -export ([registered/3, 
@@ -49,9 +49,11 @@
 
 % api
 init()->
+    init("127.0.1.1:5050").
 
+init(MasterLocation) ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
-    MasterLocation = "127.0.1.1:5050",
+    MasterLocation = MasterLocation,
     State = #framework_state{},
 
     ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
