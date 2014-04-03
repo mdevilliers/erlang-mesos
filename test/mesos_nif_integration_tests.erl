@@ -43,6 +43,7 @@ unknown_message_to_scheduler_will_not_crash_scheduler_test() ->
 
     CheekyPid = whereis(scheduler_loop),
     CheekyPid ! {booya},
+    timer:sleep(10),
     CheekyPid = whereis(scheduler_loop),
 
     ok = scheduler:destroy(),
