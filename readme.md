@@ -79,8 +79,7 @@ Todo
 ----
 
 1. c/c++ code review
-2. investigate using a port rather than a nif
-
+2. investigate using a port rather than a nif 
 
 Thanks
 ------

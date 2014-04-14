@@ -131,40 +131,128 @@ destroy() ->
     
 %% -----------------------------------------------------------------------------------------
 
-
 % private
 loop(Module,State) -> 
     receive     
         {registered , ExecutorInfoBin, FrameworkInfoBin, SlaveInfoBin } ->            
+                
                 ExecutorInfo = mesos_pb:decode_msg(ExecutorInfoBin, 'ExecutorInfo'),
                 FrameworkInfo = mesos_pb:decode_msg(FrameworkInfoBin, 'FrameworkInfo'),
                 SlaveInfo = mesos_pb:decode_msg(SlaveInfoBin, 'SlaveInfo'),
-                {ok, State1} = Module:registered(State, ExecutorInfo, FrameworkInfo, SlaveInfo),
-                loop(Module, State1);
+                
+                try Module:registered(State, ExecutorInfo, FrameworkInfo, SlaveInfo) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, registered, 4}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {reregistered, SlaveInfoBin} ->
+
         		SlaveInfo = mesos_pb:decode_msg(SlaveInfoBin, 'SlaveInfo'),
-                {ok, State1} = Module:reregistered(State,SlaveInfo),
-                loop(Module,State1);
+                try Module:reregistered(State,SlaveInfo) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, reregistered, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end; 
         {disconnected} ->
-                {ok, State1} = Module:disconnected(State),
-                loop(Module, State1);   
+                
+                try Module:disconnected(State) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, disconnected, 1}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end; 
         {launchTask, TaskInfoBin} ->
                 TaskInfo = mesos_pb:decode_msg(TaskInfoBin, 'TaskInfo'),
-                {ok, State1} = Module:launchTask(State,TaskInfo),
-                loop(Module,State1);
+                
+                try Module:launchTask(State,TaskInfo) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, launchTask, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {killTask, TaskIDBin} ->
                 TaskID = mesos_pb:decode_msg(TaskIDBin, 'TaskID'),
-                {ok, State1} = Module:killTask(State,TaskID),
-                loop(Module,State1);
+                
+                try Module:killTask(State,TaskID) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, killTask, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {frameworkMessage, Message} ->
-                {ok, State1} = Module:frameworkMessage(State,Message),
-                loop(Module, State1);
+                
+                try Module:frameworkMessage(State,Message) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, frameworkMessage, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {shutdown} ->
-                {ok, State1} = Module:shutdown(State),
-                loop(Module,State1);
+
+                try Module:shutdown(State) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, shutdown, 1}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {error, Message} ->
-                {ok, State1} = Module:error(State,Message),
-                loop(Module,State1);
+
+                try Module:error(State,Message) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, error, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {internal_shudown} ->
                 unregister(executor_loop),
                 {shutdown_complete};          
@@ -172,3 +260,17 @@ loop(Module,State) ->
             io:format("EXECUTOR: UNKNOWN MESSAGE : ~p~n", [Any]),
             loop(Module,State)
     end.
+
+% helpers
+internal_shudown(Module)->
+    try 
+        executor:stop(),
+        executor:destroy()
+    catch Class:Reason ->
+        erlang:Class([
+            {reason, Reason},
+            {mfa, {Module, internal_shudown, 1}},
+            {stacktrace, erlang:get_stacktrace()},
+            {terminate_reason, Reason}
+        ])
+end.

@@ -85,8 +85,8 @@
 
 init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                         is_list(MasterLocation) ->
+    
     Pid = spawn(?MODULE, loop, [Module, State]),
-
     try register(scheduler_loop, Pid) of
         true -> nif_scheduler:init(Pid, FrameworkInfo, MasterLocation)
     catch
@@ -266,49 +266,163 @@ destroy() ->
 % main call back loop
 loop(Module,State) -> 
     receive     
-        {registered , FrameworkIdBin, MasterInfoBin } ->            
+        {registered , FrameworkIdBin, MasterInfoBin } -> 
+
                 FrameworkId = mesos_pb:decode_msg(FrameworkIdBin, 'FrameworkID'),
                 MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
                 MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-                {ok, State1} = Module:registered(State, FrameworkId, MasterInfo2),
-                loop(Module, State1);
+
+                try Module:registered(State, FrameworkId, MasterInfo2) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, registered, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {resourceOffers, OfferBin} ->
                 Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
-                 {ok, State1} = Module:resourceOffers(State,Offer),
-                loop(Module, State1);
+
+                try Module:resourceOffers(State,Offer) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, resourceOffers, 1}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {reregistered, MasterInfoBin} ->
                 MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
                 MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-                {ok, State1} = Module:reregistered(State,MasterInfo2),
-                loop(Module,State1);
+               
+                try Module:reregistered(State,MasterInfo2) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, reregistered, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {disconnected} ->
-                {ok, State1} = Module:disconnected(State),
-                loop(Module, State1);   
+
+                try Module:disconnected(State) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, disconnected, 1}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
+   
         {offerRescinded, OfferIdBin} ->
                 OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
-                {ok, State1} = Module:offerRescinded(State,OfferId),
-                loop(Module,State1);
+
+                try Module:offerRescinded(State,OfferId) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, offerRescinded, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {statusUpdate, TaskStatusBin} ->
                 TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
-                {ok, State1} = Module:statusUpdate(State,TaskStatus),
-                loop(Module,State1);
+
+                try Module:statusUpdate(State,TaskStatus) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, statusUpdate, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
+
         {frameworkMessage, ExecutorIdBin, SlaveIdBin, Message} ->
+
                 ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                {ok, State1} = Module:frameworkMessage(State,ExecutorId,SlaveId,Message),
-                loop(Module, State1);
+  
+                try Module:frameworkMessage(State,ExecutorId,SlaveId,Message) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, frameworkMessage, 4}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {slaveLost, SlaveIdBin} ->
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                {ok, State1} = Module:frameworkMessage(State,SlaveId),
-                loop(Module,State1);
+
+                try Module:slaveLost(State,SlaveId) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, slaveLost, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {executorLost, ExecutorIdBin, SlaveIdBin, Status} ->
                 ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                {ok, State1} = Module:executorLost(State, ExecutorId,SlaveId,Status),
-                loop(Module,State1);
+                
+                try Module:executorLost(State, ExecutorId,SlaveId,Status) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, executorLost, 4}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {error, Message} ->
-                {ok, State1} = Module:error(State,Message),
-                loop(Module,State1);   
+
+                try Module:error(State,Message) of
+                    {ok, State1} -> loop(Module,State1)
+                catch
+                   Class:Reason -> 
+                        internal_shudown(Module),
+                        exit(erlang:Class([
+                                    {reason, Reason},
+                                    {mfa, {Module, error, 2}},
+                                    {stacktrace, erlang:get_stacktrace()},
+                                    {state, State}
+                                ]))
+                end;
         {internal_shudown} ->
                 unregister(scheduler_loop),
                 {shutdown_complete};        
@@ -319,3 +433,16 @@ loop(Module,State) ->
 
 % helpers
 int_to_ip(Ip)-> {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}.
+
+internal_shudown(Module)->
+    try 
+        scheduler:stop(0),
+        scheduler:destroy()
+    catch Class:Reason ->
+        erlang:Class([
+            {reason, Reason},
+            {mfa, {Module, internal_shudown, 1}},
+            {stacktrace, erlang:get_stacktrace()},
+            {terminate_reason, Reason}
+        ])
+    end.

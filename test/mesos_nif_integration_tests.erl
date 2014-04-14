@@ -49,3 +49,31 @@ unknown_message_to_scheduler_will_not_crash_scheduler_test() ->
     ok = scheduler:destroy(),
     meck:unload(test_framework).
 
+crash_in_scheduler_closes_nif_connections_gracefully_test()->
+    
+    % naughty framework
+    meck:new(test_framework, [non_strict]), 
+    meck:expect(test_framework, registered , fun(_State, _FrameworkID, _MasterInfo) -> meck:exception(error, boom) end),
+    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+
+    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+
+    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
+    {ok,_} = scheduler:start(),
+    io:format(user, "waiting for crash~n", []),
+    timer:sleep(10), % wait for crash
+    io:format(user, "starting up again~n", []),
+    meck:unload(test_framework),
+
+    % nice framework
+    meck:new(test_framework, [non_strict]), 
+    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+
+    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
+    {ok,_} = scheduler:start(),
+    {ok,driver_stopped} = scheduler:stop(0),
+    ok = scheduler:destroy(),
+    
+    meck:unload(test_framework).
+
