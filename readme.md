@@ -23,9 +23,9 @@ Getting started
 
 [Install mesos](http://mesos.apache.org/gettingstarted/) 
 
-Install protobuf version 2.5 - mesos 0.18.0 requires a release >= 2.5
+The vagrant file I use for dev testing is at https://github.com/mdevilliers/vagrant-mesos-development-environment. It can be pointed at the version of mesos you wish to develop against plus installs erlang, gcc, git ect.
 
-sudo apt-get install g++ gcc 
+Important : Install protobuf version 2.5 - mesos 0.18.0 requires a release >= 2.5
 
 ```
 git clone .....
@@ -48,7 +48,6 @@ After that you should be all set with a
 
 ```
 ./rebar compile skip_deps=true
-
 ```
 
 To run the example framework from a command window
@@ -64,7 +63,7 @@ This is only for convenience whilst developing.
 Best Practice
 -------------
 
-erlang-mesos is a new library interfacing over a nif to a rapidly changing library so at least initally I would reccomend running it in another erlang node.
+erlang-mesos is a new library interfacing over a nif to a rapidly changing library so at least initally I would recommend running it in another erlang node.
 
 Help
 -----
