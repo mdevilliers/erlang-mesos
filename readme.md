@@ -2,7 +2,7 @@ erlang-mesos
 ------------
 
 An erlang binding for [mesos](http://mesos.apache.org/).
-Currently working towards support for the 0.18.0 version.
+Currently supports for the 0.18.0 version.
 
 How does it work
 ----------------
@@ -17,6 +17,13 @@ To add your own mesos scheduler or framework you implement the behaviours that t
 There is an example framework (scheduler) and executor in the src directory.
 
 There is also an example of using erlang-mesos in an OTP application at [merkxx](https://github.com/mdevilliers/merkxx).
+
+Future
+------
+
+I want to move the implementation to use the low level wire protocol. As details emerge this api wrapper will
+move away from the nif implementation to becoming a native erlang implementation. This will of course be 
+"safer" in an erlang context
 
 Getting started
 ---------------
@@ -76,6 +83,10 @@ GLOG_v=1 erl -pa ebin
 
 Todo
 ----
+
+1. Move to the low-level wire protocol
+
+Until the above is done continue -
 
 1. c/c++ code review
 2. investigate using a port rather than a nif 
