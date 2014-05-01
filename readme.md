@@ -7,7 +7,7 @@ Currently supports the 0.18.0 version - see [releases](https://github.com/mdevil
 How does it work
 ----------------
 
-erlang-mesos had been implemented as a [nif](http://www.erlang.org/doc/tutorial/nif.html).
+erlang-mesos has been implemented as a [nif](http://www.erlang.org/doc/tutorial/nif.html).
 Messages are sent via the nif to mesos and mesos callbacks into erlang asynchronously. Although nifs are never ideal
 the asynchonous implmentaion of mesos lends itself nicely in this case.
 
