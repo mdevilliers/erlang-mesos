@@ -35,7 +35,7 @@ The vagrant file I use for dev testing is at https://github.com/mdevilliers/vagr
 Install the protobuf tools.
 
 ```
-sudo apt-get install libprotobuf-dev protobuf-compiler.
+sudo apt-get install libprotobuf-dev protobuf-compiler
 ```
 
 ```
