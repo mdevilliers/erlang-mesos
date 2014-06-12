@@ -32,7 +32,11 @@ Getting started
 
 The vagrant file I use for dev testing is at https://github.com/mdevilliers/vagrant-mesos-development-environment. It can be pointed at the version of mesos you wish to develop against plus installs erlang, gcc, git ect.
 
-Important : Install protobuf version 2.5 - mesos 0.18.0 requires a release >= 2.5
+Install the protobuf tools.
+
+```
+sudo apt-get install libprotobuf-dev protobuf-compiler
+```
 
 ```
 git clone .....
