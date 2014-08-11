@@ -55,10 +55,11 @@ init(MasterLocation) ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
     MasterLocation = MasterLocation,
     State = #framework_state{},
+   {FrameworkInfo, MasterLocation, State}.
 
-    ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
-    {ok,Status} = scheduler:start(),
-    Status.
+    % ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
+    % {ok,Status} = scheduler:start(),
+    % Status.
 
 exit() ->
     {ok,driver_stopped} = scheduler:stop(0), % stop the scheduler

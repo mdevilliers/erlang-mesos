@@ -21,9 +21,12 @@
 -module (scheduler).
 
 %api
--export([init/4,
-        init/5,
-        start/0,
+-export([
+        start_link/1,
+        start_link/2,
+        % init/3,
+        % init/4,
+        % start/0,
         join/0,
         abort/0,
         stop/1,
@@ -38,8 +41,15 @@
         launchTasks/3,
         destroy/0]).
 
+% special process
+-export ([
+          internal_init/4,
+          system_continue/3, 
+          system_terminate/4
+          ]).
+
 % private
--export ([loop/2]).
+-export ([loop/4]).
 
 -include_lib("mesos_pb.hrl").
 -include_lib("mesos_erlang.hrl").
@@ -76,47 +86,97 @@
 %% -----------------------------------------------------------------------------------------
 
 % implementation
--spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()) ->  
-                          {state_error, scheduler_already_inited}
-                        | {argument_error, invalid_or_corrupted_parameter, pid }
-                        | {argument_error, invalid_or_corrupted_parameter, framework_info}
-                        | {argument_error, invalid_or_corrupted_parameter, master_info}
-                        | ok.
-
-init(Module, FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                        is_list(MasterLocation) ->
-    
-    Pid = spawn(?MODULE, loop, [Module, State]),
-    try register(scheduler_loop, Pid) of
-        true -> nif_scheduler:init(Pid, FrameworkInfo, MasterLocation)
-    catch
-         error:badarg ->  {state_error, scheduler_already_inited}
+start_link(Module) ->
+  start_link(Module, []).
+start_link(Module, DbgOpts) ->
+    case whereis(Module) of
+        undefined ->
+            Pid = proc_lib:start_link(?MODULE, internal_init, [self(), [], Module, DbgOpts]),
+            {ok, Pid};
+        Pid ->
+            {error, {already_started, Pid}}
     end.
+
+internal_init(Parent, Args, Module, DbgOpts) ->
+ register(Module, self()),
+ process_flag(trap_exit, true),
+ Debug = sys:debug_options(DbgOpts),
+
+ % case catch Mod:init(Args) of  
+ case Module:init(Args) of
+     {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                 is_list(MasterLocation) ->
+            
+            nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
+            {ok,driver_running} = nif_scheduler:start(),                                    
+            proc_lib:init_ack({ok,self()}),
+            loop(Parent, Module, Debug, State);
+     {FrameworkInfo, MasterLocation, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                        is_record(Credential, 'Credential'),
+                                                        is_list(MasterLocation) ->
+            true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
+            {ok,driver_running} = nif_scheduler:start(),  
+            proc_lib:init_ack({ok,self()}),
+            loop(Parent, Module, Debug, State);
+     Else ->  
+        Error = {bad_return_value, Else},  
+        proc_lib:init_ack(self(), {error, Error}),  
+        exit(Error)                                             
+ end.
+
+terminate(Reason) ->
+ unregister({local, ?MODULE}),
+ io:format(user, "Terminate called : ~p~n NEED TO CLOSE NIF~n", [Reason]),
+ % receive {wait,Pid} -> exit(Pid, Reason), terminate(Reason)
+ % after 0 -> exit(Reason)
+ exit(Reason).
+
+system_continue(Parent, Debug, [Parent,Module,Debug,State]) ->
+    loop(Parent, Module, Debug, State).
+system_terminate(Reason, _Parent, _Debug, _State) ->
+    terminate(Reason).
+
+% -spec init(FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()) ->  
+%                           {state_error, scheduler_already_inited}
+%                         | {argument_error, invalid_or_corrupted_parameter, pid }
+%                         | {argument_error, invalid_or_corrupted_parameter, framework_info}
+%                         | {argument_error, invalid_or_corrupted_parameter, master_info}
+%                         | ok.
+
+% init(FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
+%                                                         is_list(MasterLocation) ->
+%     % Pid = spawn(?MODULE, loop, [Module, State]),
+%     % try register(scheduler_loop, Pid) of
+%         true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation).
+%     % catch
+%          % error:badarg ->  {state_error, scheduler_already_inited}
+%     % end.
 
 %% -----------------------------------------------------------------------------------------
 
--spec init(Module :: module(), FrameworkInfo :: #'FrameworkInfo'{},MasterLocation :: string(),Credential :: #'Credential'{},State :: any()) ->  
-                          {state_error, scheduler_already_inited}
-                        | {argument_error, invalid_or_corrupted_parameter, pid }
-                        | {argument_error, invalid_or_corrupted_parameter, framework_info}
-                        | {argument_error, invalid_or_corrupted_parameter, master_info}
-                        | {argument_error, invalid_or_corrupted_parameter, credential}
-                        | ok.
-init(Module, FrameworkInfo, MasterLocation, Credential, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                        is_list(MasterLocation) ->
-    Pid = spawn(?MODULE, loop, [Module, State]),
+% -spec init(FrameworkInfo :: #'FrameworkInfo'{},MasterLocation :: string(),Credential :: #'Credential'{},State :: any()) ->  
+%                           {state_error, scheduler_already_inited}
+%                         | {argument_error, invalid_or_corrupted_parameter, pid }
+%                         | {argument_error, invalid_or_corrupted_parameter, framework_info}
+%                         | {argument_error, invalid_or_corrupted_parameter, master_info}
+%                         | {argument_error, invalid_or_corrupted_parameter, credential}
+%                         | ok.
+% init(FrameworkInfo, MasterLocation, Credential, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
+%                                                         is_record(Credential, 'Credential'),
+%                                                         is_list(MasterLocation) ->
+%     % Pid = spawn(?MODULE, loop, [Module, State]),
 
-    try register(scheduler_loop, Pid) of
-        true -> nif_scheduler:init(Pid, FrameworkInfo, MasterLocation,Credential)
-    catch
-         error:badarg ->  {state_error, scheduler_already_inited}
-    end.
+%     % try register(scheduler_loop, Pid) of
+%         true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential).
+%     % catch
+%     %      error:badarg ->  {state_error, scheduler_already_inited}
+%     % end.
 
 %% -----------------------------------------------------------------------------------------
 
--spec start() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
-start() ->
-    nif_scheduler:start().
+% -spec start() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
+% start() ->
+%     nif_scheduler:start().
 
 %% -----------------------------------------------------------------------------------------
 
@@ -264,8 +324,13 @@ destroy() ->
 %% -----------------------------------------------------------------------------------------
 
 % main call back loop
-loop(Module,State) -> 
-    receive     
+loop(Parent,Module,Debug,State) -> 
+    receive
+        {system, From, Request} ->
+            sys:handle_system_msg(Request, From, Parent, ?MODULE, Debug, [Parent,Module,Debug,State]);
+        {'EXIT', _Parent, Reason} ->
+            terminate(Reason),
+            exit(Reason);     
         {registered , FrameworkIdBin, MasterInfoBin } -> 
 
                 FrameworkId = mesos_pb:decode_msg(FrameworkIdBin, 'FrameworkID'),
@@ -273,7 +338,7 @@ loop(Module,State) ->
                 MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
 
                 try Module:registered(State, FrameworkId, MasterInfo2) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -288,7 +353,7 @@ loop(Module,State) ->
                 Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
 
                 try Module:resourceOffers(State,Offer) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -304,7 +369,7 @@ loop(Module,State) ->
                 MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
                
                 try Module:reregistered(State,MasterInfo2) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -318,7 +383,7 @@ loop(Module,State) ->
         {disconnected} ->
 
                 try Module:disconnected(State) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -334,7 +399,7 @@ loop(Module,State) ->
                 OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
 
                 try Module:offerRescinded(State,OfferId) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -349,7 +414,7 @@ loop(Module,State) ->
                 TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
 
                 try Module:statusUpdate(State,TaskStatus) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -367,7 +432,7 @@ loop(Module,State) ->
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
   
                 try Module:frameworkMessage(State,ExecutorId,SlaveId,Message) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -382,7 +447,7 @@ loop(Module,State) ->
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
 
                 try Module:slaveLost(State,SlaveId) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -398,7 +463,7 @@ loop(Module,State) ->
                 SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
                 
                 try Module:executorLost(State, ExecutorId,SlaveId,Status) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -412,7 +477,7 @@ loop(Module,State) ->
         {error, Message} ->
 
                 try Module:error(State,Message) of
-                    {ok, State1} -> loop(Module,State1)
+                    {ok, State1} -> loop(Parent,Module,Debug,State1)
                 catch
                    Class:Reason -> 
                         internal_shudown(Module),
@@ -428,7 +493,7 @@ loop(Module,State) ->
                 {shutdown_complete};        
         Any ->
             io:format("SCHEDULER: UNKNOWN MESSAGE : ~p~n", [Any]),
-            loop(Module,State)
+            loop(Parent,Module,Debug,State)
     end.
 
 % helpers
