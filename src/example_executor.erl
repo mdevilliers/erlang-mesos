@@ -24,13 +24,14 @@
 -include_lib("mesos_pb.hrl").
 
 % api
--export ([init/0, exit/0]).    
+-export ([exit/0]).    
 
 % private
 -export ([start/0]).
 
 % from gen_executor
--export ([registered/4, 
+-export ([init/1,
+          registered/4, 
           reregistered/2, 
           disconnected/1, 
           launchTask/2,  
@@ -45,10 +46,10 @@
 % Starts up, sends a framework message, sends some task updates, sleeps for a while then closes.
 %
 
-init()->
+init(_State)->
     spawn(?MODULE, start, []), % register with mesos
     timer:sleep(infinity), % block while I do my business
-    ok.
+    {ok, []}.
 
 start()->
     ok = executor:init(?MODULE, []),

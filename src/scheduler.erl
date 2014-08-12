@@ -19,14 +19,12 @@
 
 
 -module (scheduler).
+-behaviour(gen_server).
 
 %api
 -export([
-        start_link/1,
+        start/2,
         start_link/2,
-        % init/3,
-        % init/4,
-        % start/0,
         join/0,
         abort/0,
         stop/1,
@@ -41,20 +39,17 @@
         launchTasks/3,
         destroy/0]).
 
-% special process
--export ([
-          internal_init/4,
-          system_continue/3, 
-          system_terminate/4
-          ]).
-
-% private
--export ([loop/4]).
+%gen server
+-export([init/1, handle_call/3, handle_info/2, terminate/2, handle_cast/2,
+    code_change/3]).
 
 -include_lib("mesos_pb.hrl").
 -include_lib("mesos_erlang.hrl").
 
 % callback specifications
+-callback init(State :: any()) -> {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), State :: any()} | 
+                                    {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), Credential :: #'Credential'{}, State :: any()}.
+
 -callback registered(State :: any(), 
             FrameworkInfo :: #'FrameworkInfo'{}, 
             MasterInfo :: #'MasterInfo'{}) -> {ok, State :: any()}.
@@ -85,108 +80,32 @@
 
 %% -----------------------------------------------------------------------------------------
 
-% implementation
-start_link(Module) ->
-  start_link(Module, []).
-start_link(Module, DbgOpts) ->
-    case whereis(Module) of
-        undefined ->
-            Pid = proc_lib:start_link(?MODULE, internal_init, [self(), [], Module, DbgOpts]),
-            {ok, Pid};
-        Pid ->
-            {error, {already_started, Pid}}
-    end.
-
-internal_init(Parent, Args, Module, DbgOpts) ->
- register(Module, self()),
- process_flag(trap_exit, true),
- Debug = sys:debug_options(DbgOpts),
-
- % case catch Mod:init(Args) of  
- case Module:init(Args) of
-     {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                 is_list(MasterLocation) ->
-            
-            nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
-            {ok,driver_running} = nif_scheduler:start(),                                    
-            proc_lib:init_ack({ok,self()}),
-            loop(Parent, Module, Debug, State);
-     {FrameworkInfo, MasterLocation, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                        is_record(Credential, 'Credential'),
-                                                        is_list(MasterLocation) ->
-            true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
-            {ok,driver_running} = nif_scheduler:start(),  
-            proc_lib:init_ack({ok,self()}),
-            loop(Parent, Module, Debug, State);
-     Else ->  
-        Error = {bad_return_value, Else},  
-        proc_lib:init_ack(self(), {error, Error}),  
-        exit(Error)                                             
- end.
-
-terminate(Reason) ->
- unregister({local, ?MODULE}),
- io:format(user, "Terminate called : ~p~n NEED TO CLOSE NIF~n", [Reason]),
- % receive {wait,Pid} -> exit(Pid, Reason), terminate(Reason)
- % after 0 -> exit(Reason)
- exit(Reason).
-
-system_continue(Parent, Debug, [Parent,Module,Debug,State]) ->
-    loop(Parent, Module, Debug, State).
-system_terminate(Reason, _Parent, _Debug, _State) ->
-    terminate(Reason).
-
-% -spec init(FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()) ->  
-%                           {state_error, scheduler_already_inited}
-%                         | {argument_error, invalid_or_corrupted_parameter, pid }
-%                         | {argument_error, invalid_or_corrupted_parameter, framework_info}
-%                         | {argument_error, invalid_or_corrupted_parameter, master_info}
-%                         | ok.
-
-% init(FrameworkInfo, MasterLocation, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
-%                                                         is_list(MasterLocation) ->
-%     % Pid = spawn(?MODULE, loop, [Module, State]),
-%     % try register(scheduler_loop, Pid) of
-%         true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation).
-%     % catch
-%          % error:badarg ->  {state_error, scheduler_already_inited}
-%     % end.
+-record(state, {
+    handler_module,   %% Handler callback module
+    handler_state %% Handler state
+}).
 
 %% -----------------------------------------------------------------------------------------
 
-% -spec init(FrameworkInfo :: #'FrameworkInfo'{},MasterLocation :: string(),Credential :: #'Credential'{},State :: any()) ->  
-%                           {state_error, scheduler_already_inited}
-%                         | {argument_error, invalid_or_corrupted_parameter, pid }
-%                         | {argument_error, invalid_or_corrupted_parameter, framework_info}
-%                         | {argument_error, invalid_or_corrupted_parameter, master_info}
-%                         | {argument_error, invalid_or_corrupted_parameter, credential}
-%                         | ok.
-% init(FrameworkInfo, MasterLocation, Credential, State) when is_record(FrameworkInfo, 'FrameworkInfo'), 
-%                                                         is_record(Credential, 'Credential'),
-%                                                         is_list(MasterLocation) ->
-%     % Pid = spawn(?MODULE, loop, [Module, State]),
-
-%     % try register(scheduler_loop, Pid) of
-%         true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential).
-%     % catch
-%     %      error:badarg ->  {state_error, scheduler_already_inited}
-%     % end.
+-spec start( Module :: atom(), Args :: term()) ->
+    {ok, Server :: pid()} | {error, Reason :: term()}.
+start(Module, Args) ->
+    gen_server:start(?MODULE, {Module, Args}, []).
 
 %% -----------------------------------------------------------------------------------------
 
-% -spec start() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
-% start() ->
-%     nif_scheduler:start().
+-spec start_link( Module :: atom(), Args :: term()) ->
+    {ok, Server :: pid()} | {error, Reason :: term()}.
+start_link(Module, Args ) ->
+    gen_server:start_link(?MODULE, {Module, Args}, []).
 
 %% -----------------------------------------------------------------------------------------
-
 
 -spec join() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
 join() ->
     nif_scheduler:join().
 
 %% -----------------------------------------------------------------------------------------
-
 
 -spec abort() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
 abort() ->
@@ -198,7 +117,7 @@ abort() ->
 stop(Failover) when is_integer(Failover), 
                                 Failover > -1, 
                                 Failover < 2 ->
-    nif_scheduler:stop(Failover).
+     nif_scheduler:stop(Failover).
 
 %% -----------------------------------------------------------------------------------------
 
@@ -208,9 +127,8 @@ stop(Failover) when is_integer(Failover),
                     | {argument_error, invalid_or_corrupted_parameter, offer_id}
                     | {error, driver_state()}.
 
-
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
-    nif_scheduler:declineOffer(OfferId). 
+    nif_scheduler:declineOffer(OfferId).
 
 -spec declineOffer( OfferId :: #'OfferID'{},
                     Filter :: #'Filters'{}) 
@@ -222,7 +140,7 @@ declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
 
 declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
                                   is_record(Filter, 'Filters') ->
-    nif_scheduler:declineOffer(OfferId,Filter).
+    nif_scheduler:declineOffer(OfferId, Filter).                               
 
 %% -----------------------------------------------------------------------------------------
 
@@ -314,200 +232,124 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
 
 -spec destroy() -> ok | {state_error, scheduler_not_inited}.
 destroy() ->
-    case nif_scheduler:destroy() of
-        ok ->
-            scheduler_loop ! {internal_shudown},
-            ok;
-        Other ->
-            Other
-    end.
+    nif_scheduler:destroy().
+
 %% -----------------------------------------------------------------------------------------
-
-% main call back loop
-loop(Parent,Module,Debug,State) -> 
-    receive
-        {system, From, Request} ->
-            sys:handle_system_msg(Request, From, Parent, ?MODULE, Debug, [Parent,Module,Debug,State]);
-        {'EXIT', _Parent, Reason} ->
-            terminate(Reason),
-            exit(Reason);     
-        {registered , FrameworkIdBin, MasterInfoBin } -> 
-
-                FrameworkId = mesos_pb:decode_msg(FrameworkIdBin, 'FrameworkID'),
-                MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
-                MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-
-                try Module:registered(State, FrameworkId, MasterInfo2) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, registered, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {resourceOffers, OfferBin} ->
-                Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
-
-                try Module:resourceOffers(State,Offer) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, resourceOffers, 1}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {reregistered, MasterInfoBin} ->
-                MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
-                MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-               
-                try Module:reregistered(State,MasterInfo2) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, reregistered, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {disconnected} ->
-
-                try Module:disconnected(State) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, disconnected, 1}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-   
-        {offerRescinded, OfferIdBin} ->
-                OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
-
-                try Module:offerRescinded(State,OfferId) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, offerRescinded, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {statusUpdate, TaskStatusBin} ->
-                TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
-
-                try Module:statusUpdate(State,TaskStatus) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, statusUpdate, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-
-        {frameworkMessage, ExecutorIdBin, SlaveIdBin, Message} ->
-
-                ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
-                SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-  
-                try Module:frameworkMessage(State,ExecutorId,SlaveId,Message) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, frameworkMessage, 4}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {slaveLost, SlaveIdBin} ->
-                SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-
-                try Module:slaveLost(State,SlaveId) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, slaveLost, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {executorLost, ExecutorIdBin, SlaveIdBin, Status} ->
-                ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
-                SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-                
-                try Module:executorLost(State, ExecutorId,SlaveId,Status) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, executorLost, 4}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {error, Message} ->
-
-                try Module:error(State,Message) of
-                    {ok, State1} -> loop(Parent,Module,Debug,State1)
-                catch
-                   Class:Reason -> 
-                        internal_shudown(Module),
-                        exit(erlang:Class([
-                                    {reason, Reason},
-                                    {mfa, {Module, error, 2}},
-                                    {stacktrace, erlang:get_stacktrace()},
-                                    {state, State}
-                                ]))
-                end;
-        {internal_shudown} ->
-                unregister(scheduler_loop),
-                {shutdown_complete};        
-        Any ->
-            io:format("SCHEDULER: UNKNOWN MESSAGE : ~p~n", [Any]),
-            loop(Parent,Module,Debug,State)
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
+%% Gen Server Implementation
+init({Module, Args}) ->
+    
+     case whereis(?MODULE) of
+        undefined ->
+            register(?MODULE, self()),
+            case Module:init(Args) of
+             {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                         is_list(MasterLocation) ->
+                    
+                    nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
+                    {ok,driver_running} = nif_scheduler:start(),                                    
+                    {ok, #state{
+                                handler_module = Module,
+                                handler_state = State
+                            }};
+             {FrameworkInfo, MasterLocation, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                                is_record(Credential, 'Credential'),
+                                                                is_list(MasterLocation) ->
+                    true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
+                    {ok,driver_running} = nif_scheduler:start(),  
+                    {ok, #state{
+                                handler_module = Module,
+                                handler_state = State
+                            }};
+             Else ->  
+                Error = {bad_return_value, Else},   
+                {stop, Error}                                           
+            end;
+        Pid ->
+            {error, {already_started, Pid}}
     end.
+
+handle_call(_Request, _From, State) ->
+    {reply, ok, State}.
+
+handle_cast(_Msg, State) ->
+  {noreply, State}.
+
+handle_info({registered , FrameworkIdBin, MasterInfoBin }, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    
+    FrameworkId = mesos_pb:decode_msg(FrameworkIdBin, 'FrameworkID'),
+    MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
+    MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
+
+    {ok, State1} = Module:registered(HandlerState, FrameworkId, MasterInfo2),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({resourceOffers, OfferBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+
+    Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
+    {ok, State1} = Module:resourceOffers(HandlerState,Offer),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({reregistered, MasterInfoBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+
+    MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
+    MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
+    {ok, State1} = Module:reregistered(HandlerState,MasterInfo2),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({disconnected}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+
+    {ok, State1} = Module:disconnected(HandlerState),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({offerRescinded, OfferIdBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
+    {ok, State1} = Module:offerRescinded(HandlerState,OfferId),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({statusUpdate, TaskStatusBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
+    {ok, State1} = Module:statusUpdate(HandlerState,TaskStatus),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({frameworkMessage, ExecutorIdBin, SlaveIdBin, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
+    SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
+    {ok, State1} = Module:frameworkMessage(HandlerState,ExecutorId,SlaveId,Message),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({slaveLost, SlaveIdBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
+    {ok, State1} = Module:slaveLost(HandlerState,SlaveId),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({executorLost, ExecutorIdBin, SlaveIdBin, Status}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
+    SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
+    {ok, State1} = Module:executorLost(HandlerState,ExecutorId,SlaveId,Status),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
+    {ok, State1} = Module:error(HandlerState,Message),
+    {noreply, #state{ handler_module = Module, handler_state = State1 }};
+
+handle_info(_Info, State) ->
+    % TODO : Resolve this
+    io:format(user, "SCHEDULER: UNKNOWN MESSAGE : ~p~n", [_Info]),
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    do_terminate(),
+    ok.
+
+code_change(_, State, _) ->
+  {ok, State}.
 
 % helpers
 int_to_ip(Ip)-> {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}.
 
-internal_shudown(Module)->
-    try 
-        scheduler:stop(0),
-        scheduler:destroy()
-    catch Class:Reason ->
-        erlang:Class([
-            {reason, Reason},
-            {mfa, {Module, internal_shudown, 1}},
-            {stacktrace, erlang:get_stacktrace()},
-            {terminate_reason, Reason}
-        ])
-    end.
+do_terminate() -> 
+    unregister(?MODULE),
+    scheduler:stop(0),
+    scheduler:destroy().

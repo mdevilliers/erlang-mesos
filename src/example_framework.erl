@@ -24,10 +24,11 @@
 -include_lib("mesos_pb.hrl").
 
 % api
--export ([init/0,init/1, exit/0]).
+-export ([exit/0]).
 
 % from scheduler
--export ([registered/3, 
+-export ([init/1, 
+          registered/3, 
           reregistered/2, 
           disconnected/1, 
           offerRescinded/2, 
@@ -46,20 +47,14 @@
 % Starts up, listens form resource offers, starts one task (example executor), listens for updates
 % When the task stops listens from more resource offers....
 %
+% scheduler:start(example_framework,[]).
 
 % api
-init()->
-    init("127.0.1.1:5050").
-
 init(MasterLocation) ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
-    MasterLocation = MasterLocation,
+    % MasterLocation = "127.0.1.1:5050",
     State = #framework_state{},
    {FrameworkInfo, MasterLocation, State}.
-
-    % ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
-    % {ok,Status} = scheduler:start(),
-    % Status.
 
 exit() ->
     {ok,driver_stopped} = scheduler:stop(0), % stop the scheduler
