@@ -101,19 +101,19 @@ start_link(Module, Args ) ->
 
 %% -----------------------------------------------------------------------------------------
 
--spec join() -> { state_error, scheduler_not_inited} | {ok, driver_running } | {error, driver_state()}.
+-spec join() -> {ok, driver_running } | { error, scheduler_not_inited} | {error, driver_state()}.
 join() ->
     nif_scheduler:join().
 
 %% -----------------------------------------------------------------------------------------
 
--spec abort() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
+-spec abort() -> {ok, driver_aborted } | { state_error, scheduler_not_inited} | {error, driver_state()}.
 abort() ->
     nif_scheduler:abort().
 
 %% -----------------------------------------------------------------------------------------
 
--spec stop(integer()) -> { state_error, scheduler_not_inited} | {ok, driver_stopped } | {error, driver_state()}.    
+-spec stop(integer()) -> {ok, driver_aborted } | { error, scheduler_not_inited} | {error, driver_state()}.    
 stop(Failover) when is_integer(Failover), 
                                 Failover > -1, 
                                 Failover < 2 ->
@@ -122,9 +122,9 @@ stop(Failover) when is_integer(Failover),
 %% -----------------------------------------------------------------------------------------
 
 -spec declineOffer( OfferId :: #'OfferID'{}) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
+                    -> {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offer_id}}
                     | {error, driver_state()}.
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
@@ -132,10 +132,10 @@ declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
 
 -spec declineOffer( OfferId :: #'OfferID'{},
                     Filter :: #'Filters'{}) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
-                    | {argument_error, invalid_or_corrupted_parameter, filters}
+                    ->{ok, driver_running }
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offer_id}}
+                    | {error, {invalid_or_corrupted_parameter, filters}}
                     | {error, driver_state()}.
 
 declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
@@ -145,9 +145,9 @@ declineOffer(OfferId,Filter) when is_record(OfferId, 'OfferID'),
 %% -----------------------------------------------------------------------------------------
 
 -spec killTask( TaskId :: #'TaskID'{}) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, task_id}
+                    -> {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, task_id}}
                     | {error, driver_state()}.
 
 killTask(TaskId) when is_record(TaskId,'TaskID') ->
@@ -155,7 +155,7 @@ killTask(TaskId) when is_record(TaskId,'TaskID') ->
 
 %% -----------------------------------------------------------------------------------------
 
--spec reviveOffers() -> { state_error, scheduler_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
+-spec reviveOffers() -> {ok, driver_aborted } | { error, scheduler_not_inited} | {error, driver_state()}.
 
 reviveOffers()->
     nif_scheduler:reviveOffers().
@@ -165,11 +165,11 @@ reviveOffers()->
 -spec sendFrameworkMessage( ExecutorId :: #'ExecutorID'{},
                             SlaveId :: #'SlaveID'{},
                             Data ::string()) 
-                            -> { state_error, scheduler_not_inited} 
-                            | {ok, driver_running } 
-                            | {argument_error, invalid_or_corrupted_parameter, executor_id}
-                            | {argument_error, invalid_or_corrupted_parameter, slave_id}
-                            | {argument_error, invalid_or_corrupted_parameter, data}
+                            -> {ok, driver_running }
+                            | {error, scheduler_not_inited} 
+                            | {error, {invalid_or_corrupted_parameter, executor_id}}
+                            | {error, {invalid_or_corrupted_parameter, slave_id}}
+                            | {error, {invalid_or_corrupted_parameter, data}}
                             | {error, driver_state()}.
 
 sendFrameworkMessage(ExecutorId,SlaveId,Data) when is_record(ExecutorId, 'ExecutorID'),
@@ -180,9 +180,9 @@ sendFrameworkMessage(ExecutorId,SlaveId,Data) when is_record(ExecutorId, 'Execut
 %% -----------------------------------------------------------------------------------------
 
 -spec requestResources( Requests :: [ #'Request'{} ]) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, request_array}
+                    -> {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, request_array}}
                     | {error, driver_state()}.
 
 requestResources(Requests) when is_list(Requests) ->
@@ -191,9 +191,9 @@ requestResources(Requests) when is_list(Requests) ->
 %% -----------------------------------------------------------------------------------------
 
 -spec reconcileTasks( TaskStatus :: [ #'TaskStatus'{} ]) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, task_status_array}
+                    -> {ok, driver_running }
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, task_status_array}}
                     | {error, driver_state()}.
 
 reconcileTasks(TaskStatus)when is_list(TaskStatus)->
@@ -203,10 +203,10 @@ reconcileTasks(TaskStatus)when is_list(TaskStatus)->
 
 -spec launchTasks(  OfferId :: #'OfferID'{}, 
                     TaskInfos :: [ #'TaskInfo'{}]) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
-                    | {argument_error, invalid_or_corrupted_parameter, task_info_array}
+                    -> {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offer_id}}
+                    | {error, {invalid_or_corrupted_parameter, task_info_array}}
                     | {error, driver_state()}.
 
 launchTasks(OfferId, TaskInfos) when is_record(OfferId, 'OfferID'), 
@@ -216,11 +216,11 @@ launchTasks(OfferId, TaskInfos) when is_record(OfferId, 'OfferID'),
 -spec launchTasks(  OfferId :: #'OfferID'{}, 
                     TaskInfos :: [ #'TaskInfo'{}],
                     Filter :: #'Filters'{}) 
-                    -> { state_error, scheduler_not_inited} 
-                    | {ok, driver_running } 
-                    | {argument_error, invalid_or_corrupted_parameter, offer_id}
-                    | {argument_error, invalid_or_corrupted_parameter, task_info_array}
-                    | {argument_error, invalid_or_corrupted_parameter, filters}
+                    -> {ok, driver_running }
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offer_id}}
+                    | {error, {invalid_or_corrupted_parameter, task_info_array}}
+                    | {error, {invalid_or_corrupted_parameter, filters}}
                     | {error, driver_state()}.
 
 launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'), 
@@ -230,7 +230,7 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
 
 %% -----------------------------------------------------------------------------------------
 
--spec destroy() -> ok | {state_error, scheduler_not_inited}.
+-spec destroy() -> ok | {error, scheduler_not_inited}.
 destroy() ->
     Response = nif_scheduler:destroy(),
     unregister(?MODULE),
@@ -252,7 +252,7 @@ init({Module, Args}) ->
              {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                          is_list(MasterLocation) ->
                     
-                    nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
                     {ok,driver_running} = nif_scheduler:start(),                                    
                     {ok, #state{
                                 handler_module = Module,
@@ -261,7 +261,7 @@ init({Module, Args}) ->
              {FrameworkInfo, MasterLocation, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                                 is_record(Credential, 'Credential'),
                                                                 is_list(MasterLocation) ->
-                    true = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
                     {ok,driver_running} = nif_scheduler:start(),  
                     {ok, #state{
                                 handler_module = Module,

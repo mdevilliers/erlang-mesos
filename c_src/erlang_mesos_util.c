@@ -78,3 +78,14 @@ int inspect_array_of_binary_objects(ErlNifEnv* env, ERL_NIF_TERM term, ErlNifBin
     }
     return 1;
 }
+
+// helper method to make an argument error object
+ERL_NIF_TERM make_argument_error(ErlNifEnv* env, const char* reason, char* invalid_parameter)
+{
+   return enif_make_tuple2(env, 
+                            enif_make_atom(env, "error"), 
+                            enif_make_tuple2(env,
+                                            enif_make_atom(env, reason),
+                                            enif_make_atom(env, invalid_parameter))
+                            );
+}

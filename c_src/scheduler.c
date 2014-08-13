@@ -54,7 +54,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 1) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_already_inited"));
     }
 
@@ -62,37 +62,24 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     if(!enif_get_local_pid(env, argv[0], pid))
     {
-        return enif_make_tuple3(env, 
-                                enif_make_atom(env, "argument_error"), 
-                                enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                                enif_make_atom(env, "pid"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "pid");
     }
 
     if (!enif_inspect_binary(env, argv[1], &frameworkInfo_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "framework_info"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "framework_info");
     }
 
     if(!enif_get_string(env, argv[2], masterUrl , MAXBUFLEN, ERL_NIF_LATIN1 ))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "master_info"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "master_info");   
     }
 
     if(argc == 4 )
     {
         if(!enif_inspect_binary(env,argv[3], &credentials_binary))
-        {           
-            return enif_make_tuple3(env, 
-                        enif_make_atom(env, "argument_error"), 
-                        enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                        enif_make_atom(env, "credential"));
-            
+        {       
+            return make_argument_error(env, "invalid_or_corrupted_parameter", "credential");    
         }
         state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 1, &credentials_binary);
     }
@@ -112,7 +99,7 @@ nif_scheduler_start(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     
@@ -129,7 +116,7 @@ nif_scheduler_join(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     
@@ -146,7 +133,7 @@ nif_scheduler_abort(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     
@@ -172,24 +159,18 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "sheduler_not_inited"));
     }
     
     if(!enif_get_int( env, argv[0], &failover))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "failover"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "failover");
     }
 
     if(failover < 0 || failover > 1)
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "failover"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "failover");
     }
 
     SchedulerDriverStatus status = scheduler_stop( state->scheduler_state, failover );
@@ -216,22 +197,16 @@ nif_scheduler_declineOffer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     if (!enif_inspect_binary(env, argv[0], &offerId_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "offer_id"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "offer_id");
     }
     if (!enif_inspect_binary(env, argv[1], &filters_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "filters"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "filters");
     }
 
     SchedulerDriverStatus status = scheduler_declineOffer( state->scheduler_state, &offerId_binary, &filters_binary );
@@ -249,15 +224,12 @@ nif_scheduler_killTask(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     if (!enif_inspect_binary(env, argv[0], &taskId_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_id"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_id");
     }
 
     SchedulerDriverStatus status = scheduler_killTask( state->scheduler_state, &taskId_binary);
@@ -273,7 +245,7 @@ nif_scheduler_reviveOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     
@@ -293,30 +265,21 @@ nif_scheduler_sendFrameworkMessage(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     if (!enif_inspect_binary(env, argv[0], &executorId_binary)) 
     {
-                return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "executor_id"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "executor_id");
     }
     if (!enif_inspect_binary(env, argv[1], &slaveId_binary)) 
     {
-                return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "slave_id"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "slave_id");
     }
     //REVIEW : buffer length
     if(!enif_get_string(env, argv[2], data , MAXBUFLEN, ERL_NIF_LATIN1 ))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "data"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "data");
     }
 
     SchedulerDriverStatus status = scheduler_sendFrameworkMessage( state->scheduler_state , 
@@ -336,34 +299,24 @@ nif_scheduler_requestResources(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
 
     if(!enif_is_list(env, argv[0])) 
-        {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "request_array"));
-        };
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    };
 
     if(!enif_get_list_length(env, argv[0], &length))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "request_array"));
-
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
     }
 
     ErlNifBinary binary_arr[length];
     if(!inspect_array_of_binary_objects(env, argv[0], binary_arr ))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "request_array"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
     }
 
     BinaryNifArray binaryNifArrayHolder ;
@@ -384,34 +337,24 @@ nif_scheduler_reconcileTasks(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
 
     if(!enif_is_list(env, argv[0])) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_status_array"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_status_array");
     };
 
     if(!enif_get_list_length(env, argv[0], &length))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_status_array"));
-
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_status_array");
     }
     
     ErlNifBinary binary_arr[length];
     if(!inspect_array_of_binary_objects(env, argv[0], binary_arr ))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_status_array"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_status_array");
     }   
 
     BinaryNifArray binaryNifArrayHolder ;
@@ -434,51 +377,35 @@ nif_scheduler_launchTasks(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
 
     if (!enif_inspect_binary(env, argv[0], &offerId_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "offer_id"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "offer_id");
     }
     
     if(!enif_is_list(env, argv[1])) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_info_array"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_info_array");
     };
 
     if(!enif_get_list_length(env, argv[1], &length))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_info_array"));
-
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_info_array");
     }
     
     ErlNifBinary task_info_binary_arr[length];
 
     if(!inspect_array_of_binary_objects(env, argv[1], task_info_binary_arr ))
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "task_info_array"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_info_array");
     }   
 
     if (!enif_inspect_binary(env, argv[2], &filters_binary)) 
     {
-        return enif_make_tuple3(env, 
-                    enif_make_atom(env, "argument_error"), 
-                    enif_make_atom(env, "invalid_or_corrupted_parameter"),
-                    enif_make_atom(env, "filters"));
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "filters");
     }
 
     BinaryNifArray binaryNifArrayHolder ;
@@ -497,7 +424,7 @@ nif_scheduler_destroy(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
     if(state->initilised == 0 ) 
     {
         return enif_make_tuple2(env, 
-            enif_make_atom(env, "state_error"), 
+            enif_make_atom(env, "error"), 
             enif_make_atom(env, "scheduler_not_inited"));
     }
     scheduler_destroy(state->scheduler_state);

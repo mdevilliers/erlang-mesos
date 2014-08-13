@@ -85,19 +85,19 @@ start_link(Module, Args ) ->
 
 %% -----------------------------------------------------------------------------------------
 
--spec join() -> { state_error, executor_not_inited} | {ok, driver_running } | {error, driver_state()}.
+-spec join() -> {ok, driver_running } | { error, executor_not_inited} | {error, driver_state()}.
 join() ->
     nif_executor:join().
 
 %% -----------------------------------------------------------------------------------------
 
--spec abort() -> { state_error, executor_not_inited} | {ok, driver_aborted } | {error, driver_state()}.
+-spec abort() -> {ok, driver_running } | { error, executor_not_inited} | {error, driver_state()}.
 abort() ->
     nif_executor:abort().
 
 %% -----------------------------------------------------------------------------------------
 
--spec stop() -> { state_error, executor_not_inited} | {ok, driver_stopped } | {error, driver_state()}.
+-spec stop() -> {ok, driver_running } | { error, executor_not_inited} | {error, driver_state()}.
 stop() ->       
     nif_executor:stop().
 
@@ -105,8 +105,8 @@ stop() ->
 
 -spec sendFrameworkMessage( Message :: string() ) -> 
                           {ok, driver_running } 
-                        | {argument_error, invalid_or_corrupted_parameter, data }
-                        | {state_error, executor_not_inited} 
+                        | {error, {invalid_or_corrupted_parameter, data }}
+                        | {error, executor_not_inited} 
                         | {error, driver_state()}.
 
 sendFrameworkMessage(Data) when is_list(Data) ->
@@ -115,15 +115,15 @@ sendFrameworkMessage(Data) when is_list(Data) ->
 
 -spec sendStatusUpdate( TaskStatus :: #'TaskStatus'{} ) -> 
                           {ok, driver_running } 
-                        | {argument_error, invalid_or_corrupted_parameter, task_status }
-                        | {state_error, executor_not_inited} 
+                        | {error, {invalid_or_corrupted_parameter, task_status }}
+                        | {error, executor_not_inited} 
                         | {error, driver_state()}.
 
 sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
     nif_executor:sendStatusUpdate(TaskStatus).
 %% -----------------------------------------------------------------------------------------
 
--spec destroy() -> ok | {state_error, executor_not_inited}.
+-spec destroy() -> ok | {error, executor_not_inited}.
 
 destroy() ->
     Response = nif_executor:destroy(),

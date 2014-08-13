@@ -9,7 +9,7 @@ How does it work
 
 erlang-mesos has been implemented as a [nif](http://www.erlang.org/doc/tutorial/nif.html).
 Messages are sent via the nif to mesos and mesos callbacks into erlang asynchronously. Although nifs are never ideal
-the asynchonous implmentaion of mesos lends itself nicely in this case.
+the asynchronous implmentaion of mesos lends itself nicely in this case.
 
 The modules - scheduler.erl and executor.erl are directly equivialant to their counterparts in mesos.
 To add your own mesos scheduler or framework you implement the behaviours that they expose.
