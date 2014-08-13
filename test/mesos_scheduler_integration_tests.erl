@@ -1,4 +1,4 @@
--module (mesos_nif_integration_tests).
+-module (mesos_scheduler_integration_tests).
 -include_lib("eunit/include/eunit.hrl").
 -include ("mesos_pb.hrl").
 -include ("mesos_erlang.hrl").
@@ -7,29 +7,27 @@
 % change the location used here...
 -define (MASTER_LOCATION, "127.0.1.1:5050").
 
-
 init_and_clean_exit_init_scheduler_test()->
 
-    example_framework:init(?MASTER_LOCATION),
-    timer:sleep(1000),
+    {ok, _Pid} = scheduler:start_link( example_framework, ?MASTER_LOCATION),
     example_framework:exit(),
-    timer:sleep(1000),
-    example_framework:init(?MASTER_LOCATION),
-    timer:sleep(1000),
+    {ok, _Pid2} = scheduler:start_link( example_framework, ?MASTER_LOCATION),
     example_framework:exit().
 
 inited_scheduler_can_not_be_reinited_test()->
     
     meck:new(test_framework, [non_strict]), 
 
+    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+
+    meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
     meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
     meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
 
-    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+    {ok, _} = scheduler:start_link( test_framework, ?MASTER_LOCATION),
+    {error,{already_started, _}} = scheduler:start( test_framework, ?MASTER_LOCATION),
 
-    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
-    {state_error, scheduler_already_inited} = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
-
+    {ok, driver_stopped} = scheduler:stop(0),
     ok = scheduler:destroy(),
 
     meck:unload(test_framework).
@@ -39,27 +37,34 @@ unknown_message_to_scheduler_will_not_crash_scheduler_test() ->
     meck:new(test_framework, [non_strict]), 
 
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
-    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
 
-    CheekyPid = whereis(scheduler_loop),
+    meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
+    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+
+    {ok,CheekyPid} = scheduler:start( test_framework, ?MASTER_LOCATION),
+
+    CheekyPid = whereis(scheduler),
     CheekyPid ! {booya},
-    timer:sleep(10),
-    CheekyPid = whereis(scheduler_loop),
+    CheekyPid = whereis(scheduler),
 
+    {ok, driver_stopped} = scheduler:stop(0),
     ok = scheduler:destroy(),
+    
     meck:unload(test_framework).
 
 crash_in_scheduler_closes_nif_connections_gracefully_test()->
     
     % naughty framework
     meck:new(test_framework, [non_strict]), 
+
+    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
+    meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
     meck:expect(test_framework, registered , fun(_State, _FrameworkID, _MasterInfo) -> meck:exception(error, boom) end),
     meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
 
-    FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
-
-    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
-    {ok,_} = scheduler:start(),
+    {ok,_} = scheduler:start(test_framework, ?MASTER_LOCATION),
+ 
     io:format(user, "waiting for crash~n", []),
     timer:sleep(10), % wait for crash
     io:format(user, "starting up again~n", []),
@@ -67,13 +72,13 @@ crash_in_scheduler_closes_nif_connections_gracefully_test()->
 
     % nice framework
     meck:new(test_framework, [non_strict]), 
+    meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
     meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
     meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
 
-    ok = scheduler:init(test_framework, FrameworkInfo, ?MASTER_LOCATION, []),
-    {ok,_} = scheduler:start(),
-    {ok,driver_stopped} = scheduler:stop(0),
+    {ok,_} = scheduler:start(test_framework, ?MASTER_LOCATION),
+
+    {ok, driver_stopped} = scheduler:stop(0),
     ok = scheduler:destroy(),
     
     meck:unload(test_framework).
-

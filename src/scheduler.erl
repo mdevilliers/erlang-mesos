@@ -232,12 +232,17 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
 
 -spec destroy() -> ok | {state_error, scheduler_not_inited}.
 destroy() ->
-    nif_scheduler:destroy().
+    Response = nif_scheduler:destroy(),
+    unregister(?MODULE),
+    Response.
 
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% Gen Server Implementation
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
 init({Module, Args}) ->
     
      case whereis(?MODULE) of
@@ -267,7 +272,7 @@ init({Module, Args}) ->
                 {stop, Error}                                           
             end;
         Pid ->
-            {error, {already_started, Pid}}
+            {stop, {already_started,Pid}} 
     end.
 
 handle_call(_Request, _From, State) ->

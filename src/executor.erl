@@ -126,13 +126,19 @@ sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
 -spec destroy() -> ok | {state_error, executor_not_inited}.
 
 destroy() ->
-    nif_executor:destroy().
+    Response = nif_executor:destroy(),
+    unregister(?MODULE),
+    Response.
     
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% Gen Server Implementation
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------------------
 init({Module, Args}) ->
     
      case whereis(?MODULE) of
@@ -147,13 +153,12 @@ init({Module, Args}) ->
                                 handler_module = Module,
                                 handler_state = State
                             }};
-             
              Else ->  
                 Error = {bad_return_value, Else},   
                 {stop, Error}                                           
             end;
         Pid ->
-            {error, {already_started, Pid}}
+            {stop, {already_started,Pid}} 
     end.
 
 handle_call(_Request, _From, State) ->
