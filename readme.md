@@ -65,7 +65,7 @@ To run the example framework from a command window
 
 ```
 erl -pa ebin 
-example_framework:init().
+example_framework:start("127.0.1.1:5050").
 ```
 
 Note this will only work on a single node (development) cluster due to the way the example executor is run.

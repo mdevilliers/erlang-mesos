@@ -21,8 +21,8 @@ inited_scheduler_can_not_be_reinited_test()->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
 
     meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
-    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
-    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+    meck:expect(test_framework, registered , fun(_FrameworkID, _MasterInfo, State) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(_Offer, State) -> {ok,State} end),
 
     {ok, _} = scheduler:start_link( test_framework, ?MASTER_LOCATION),
     {error,{already_started, _}} = scheduler:start( test_framework, ?MASTER_LOCATION),
@@ -39,8 +39,8 @@ unknown_message_to_scheduler_will_not_crash_scheduler_test() ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
 
     meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
-    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
-    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+    meck:expect(test_framework, registered , fun(_FrameworkID, _MasterInfo, State) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(_Offer, State) -> {ok,State} end),
 
     {ok,CheekyPid} = scheduler:start( test_framework, ?MASTER_LOCATION),
 
@@ -60,8 +60,8 @@ crash_in_scheduler_closes_nif_connections_gracefully_test()->
 
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
     meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
-    meck:expect(test_framework, registered , fun(_State, _FrameworkID, _MasterInfo) -> meck:exception(error, boom) end),
-    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+    meck:expect(test_framework, registered , fun(_FrameworkID, _MasterInfo,_State) -> meck:exception(error, boom) end),
+    meck:expect(test_framework, resourceOffers , fun(_Offer, State) -> {ok,State} end),
 
     {ok,_} = scheduler:start(test_framework, ?MASTER_LOCATION),
  
@@ -73,8 +73,8 @@ crash_in_scheduler_closes_nif_connections_gracefully_test()->
     % nice framework
     meck:new(test_framework, [non_strict]), 
     meck:expect(test_framework, init , fun(_) -> { FrameworkInfo, ?MASTER_LOCATION, []} end),
-    meck:expect(test_framework, registered , fun(State, _FrameworkID, _MasterInfo) -> {ok,State} end),
-    meck:expect(test_framework, resourceOffers , fun(State, _Offer) -> {ok,State} end),
+    meck:expect(test_framework, registered , fun(_FrameworkID, _MasterInfo, State) -> {ok,State} end),
+    meck:expect(test_framework, resourceOffers , fun(_Offer, State) -> {ok,State} end),
 
     {ok,_} = scheduler:start(test_framework, ?MASTER_LOCATION),
 

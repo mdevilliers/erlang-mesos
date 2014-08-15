@@ -37,26 +37,26 @@
 -include_lib("mesos_erlang.hrl").
 
 %% callback specifications
--callback init(State :: any()) -> {ok, State :: any}.
+-callback init(Args :: any()) -> {ok, State :: any}.
 
--callback registered(State :: any(), 
-            ExecutorInfo :: #'ExecutorInfo'{}, 
-            FrameworkInfo :: #'FrameworkInfo'{}, 
-            SlaveInfo :: #'SlaveInfo'{})-> {ok, State :: any()}.
+-callback registered( ExecutorInfo :: #'ExecutorInfo'{}, 
+                      FrameworkInfo :: #'FrameworkInfo'{}, 
+                      SlaveInfo :: #'SlaveInfo'{},
+                      State :: any())-> {ok, State :: any()}.
 
--callback reregistered(State :: any(), SlaveInfo :: #'SlaveInfo'{}) -> {ok, State :: any()}.
+-callback reregistered(SlaveInfo :: #'SlaveInfo'{}, State :: any()) -> {ok, State :: any()}.
 
 -callback disconnected(State :: any()) -> {ok, State :: any()}.
 
--callback launchTask(State :: any(), TaskInfo :: #'TaskInfo'{}) -> {ok, State :: any()}.
+-callback launchTask(TaskInfo :: #'TaskInfo'{}, State :: any()) -> {ok, State :: any()}.
 
--callback killTask(State :: any(), TaskID :: #'TaskID'{}) -> {ok, State :: any()}.
+-callback killTask(TaskID :: #'TaskID'{}, State :: any()) -> {ok, State :: any()}.
 
--callback frameworkMessage(State :: any(), Message :: string()) -> {ok, State :: any()}.
+-callback frameworkMessage(Message :: string(), State :: any()) -> {ok, State :: any()}.
 
 -callback shutdown(State :: any()) -> {ok, State :: any()}.
 
--callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.    
+-callback error(Message :: string(), State :: any()) -> {ok, State :: any()}.    
 
 %% -----------------------------------------------------------------------------------------
 
@@ -173,13 +173,13 @@ handle_info({registered , ExecutorInfoBin, FrameworkInfoBin, SlaveInfoBin }, #st
     FrameworkInfo = mesos_pb:decode_msg(FrameworkInfoBin, 'FrameworkInfo'),
     SlaveInfo = mesos_pb:decode_msg(SlaveInfoBin, 'SlaveInfo'),
 
-    {ok, State1} = Module:registered(HandlerState, ExecutorInfo, FrameworkInfo, SlaveInfo),
+    {ok, State1} = Module:registered(ExecutorInfo, FrameworkInfo, SlaveInfo, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({reregistered, SlaveInfoBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     SlaveInfo = mesos_pb:decode_msg(SlaveInfoBin, 'SlaveInfo'),
 
-    {ok, State1} = Module:reregistered(HandlerState, SlaveInfo),
+    {ok, State1} = Module:reregistered(SlaveInfo, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({disconnected}, #state{ handler_module = Module, handler_state = HandlerState }) ->
@@ -189,16 +189,16 @@ handle_info({disconnected}, #state{ handler_module = Module, handler_state = Han
 
 handle_info({launchTask, TaskInfoBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     TaskInfo = mesos_pb:decode_msg(TaskInfoBin, 'TaskInfo'),
-    {ok, State1} = Module:launchTask(HandlerState, TaskInfo),
+    {ok, State1} = Module:launchTask(TaskInfo, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({killTask, TaskIDBin} , #state{ handler_module = Module, handler_state = HandlerState }) ->
     TaskID = mesos_pb:decode_msg(TaskIDBin, 'TaskID'),
-    {ok, State1} = Module:killTask(HandlerState, TaskID),
+    {ok, State1} = Module:killTask(TaskID, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({frameworkMessage, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
-    {ok, State1} = Module:frameworkMessage(HandlerState,Message),
+    {ok, State1} = Module:frameworkMessage(Message, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({shutdown}, #state{ handler_module = Module, handler_state = HandlerState }) ->
@@ -206,7 +206,7 @@ handle_info({shutdown}, #state{ handler_module = Module, handler_state = Handler
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
-    {ok, State1} = Module:error(HandlerState,Message),
+    {ok, State1} = Module:error(Message, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info(_Info, State) ->

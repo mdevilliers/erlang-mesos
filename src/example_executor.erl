@@ -63,11 +63,11 @@ exit() ->
     init:stop(). % exit the process
 
 % call backs
-registered(State, ExecutorInfo, FrameworkInfo, SlaveInfo) ->
+registered(ExecutorInfo, FrameworkInfo, SlaveInfo, State) ->
     io:format("Registered callback : ~p ~p ~p~n", [ExecutorInfo, FrameworkInfo, SlaveInfo]),
     {ok,State}.
 
-reregistered(State,SlaveInfo) ->
+reregistered(SlaveInfo, State) ->
     io:format("Reregistered callback : ~p ~n", [SlaveInfo]),
     {ok,State}.
 
@@ -75,7 +75,7 @@ disconnected(State) ->
     io:format("Disconnected callback~n", []),
     {ok,State}.
 
-launchTask(State,TaskInfo) ->
+launchTask(TaskInfo, State) ->
     io:format("LaunchTask callback : ~p ~n", [TaskInfo]),
 
     TaskId = TaskInfo#'TaskInfo'.task_id,
@@ -88,11 +88,11 @@ launchTask(State,TaskInfo) ->
     spawn(?MODULE, exit, []), % start closing down
     {ok,State}.
 
-killTask(State,TaskID) ->
+killTask(TaskID, State) ->
     io:format("KillTask callback : ~p ~n", [TaskID]),
     {ok,State}.
 
-frameworkMessage(State,Message) ->
+frameworkMessage(Message, State) ->
     io:format("FrameworkMessage callback : ~p ~n", [Message]),
     {ok,State}.
 
@@ -100,6 +100,6 @@ shutdown(State) ->
     io:format("Shutdown callback~n", []),
     {ok,State}.
 
-error(State,Message) ->
+error(Message, State) ->
     io:format("Error callback : ~p ~n", [Message]),
     {ok,State}.

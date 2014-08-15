@@ -47,36 +47,35 @@
 -include_lib("mesos_erlang.hrl").
 
 % callback specifications
--callback init(State :: any()) -> {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), State :: any()} | 
+-callback init( Args :: any()) -> {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), State :: any()} | 
                                     {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), Credential :: #'Credential'{}, State :: any()}.
 
--callback registered(State :: any(), 
-            FrameworkInfo :: #'FrameworkInfo'{}, 
-            MasterInfo :: #'MasterInfo'{}) -> {ok, State :: any()}.
+-callback registered( FrameworkInfo :: #'FrameworkInfo'{}, 
+                      MasterInfo :: #'MasterInfo'{},
+                      State :: any()) -> {ok, State :: any()}.
 
--callback reregistered(State :: any(), MasterInfo :: #'MasterInfo'{}) -> {ok, State :: any()}.
+-callback reregistered( MasterInfo :: #'MasterInfo'{}, State :: any()) -> {ok, State :: any()}.
 
--callback disconnected(State :: any()) -> {ok, State :: any()}.
+-callback disconnected( State :: any()) -> {ok, State :: any()}.
 
--callback resourceOffers(State :: any(), Offer :: #'Offer'{}) -> {ok, State :: any()}.
+-callback resourceOffers( Offer :: #'Offer'{}, State :: any()) -> {ok, State :: any()}.
 
--callback offerRescinded(State :: any(), OfferID :: #'OfferID'{}) -> {ok, State :: any()}.
+-callback offerRescinded( OfferID :: #'OfferID'{}, State :: any()) -> {ok, State :: any()}.
 
--callback statusUpdate(State :: any(), TaskStatus :: #'TaskStatus'{}) -> {ok, State :: any()}.
+-callback statusUpdate( TaskStatus :: #'TaskStatus'{},State :: any()) -> {ok, State :: any()}.
 
--callback frameworkMessage(State :: any(),  
-            ExecutorId :: #'ExecutorID'{},
-            SlaveId :: #'SlaveID'{},
-            Message :: string()) -> {ok, State :: any()}.
+-callback frameworkMessage( ExecutorId :: #'ExecutorID'{},
+                        SlaveId :: #'SlaveID'{},
+                        Message :: string(),
+                        State :: any()) -> {ok, State :: any()}.
 
--callback slaveLost(State :: any(), SlaveId :: #'SlaveID'{}) -> {ok, State :: any()}.
+-callback slaveLost( SlaveId :: #'SlaveID'{},State :: any()) -> {ok, State :: any()}.
 
--callback executorLost(State :: any(),  
-            ExecutorId :: #'ExecutorID'{},
-            SlaveId :: #'SlaveID'{},
-            Status :: pos_integer()) -> {ok, State :: any()}.
+-callback executorLost( ExecutorId :: #'ExecutorID'{},
+                        SlaveId :: #'SlaveID'{},
+                        Status :: pos_integer(),State :: any()) -> {ok, State :: any()}.
 
--callback error(State :: any(), Message :: string()) -> {ok, State :: any()}.   
+-callback error(Message :: string(),State :: any()) -> {ok, State :: any()}.   
 
 %% -----------------------------------------------------------------------------------------
 
@@ -247,6 +246,7 @@ init({Module, Args}) ->
     
      case whereis(?MODULE) of
         undefined ->
+            io:format(user ,"registereing module : ~p~n", [?MODULE]),
             register(?MODULE, self()),
             case Module:init(Args) of
              {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
@@ -287,20 +287,20 @@ handle_info({registered , FrameworkIdBin, MasterInfoBin }, #state{ handler_modul
     MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
     MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
 
-    {ok, State1} = Module:registered(HandlerState, FrameworkId, MasterInfo2),
+    {ok, State1} = Module:registered(FrameworkId, MasterInfo2, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({resourceOffers, OfferBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
 
     Offer = mesos_pb:decode_msg(OfferBin, 'Offer'),
-    {ok, State1} = Module:resourceOffers(HandlerState,Offer),
+    {ok, State1} = Module:resourceOffers(Offer, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({reregistered, MasterInfoBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
 
     MasterInfo = mesos_pb:decode_msg(MasterInfoBin, 'MasterInfo'),
     MasterInfo2 = MasterInfo#'MasterInfo'{ip = int_to_ip(MasterInfo#'MasterInfo'.ip)},
-    {ok, State1} = Module:reregistered(HandlerState,MasterInfo2),
+    {ok, State1} = Module:reregistered(MasterInfo2, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({disconnected}, #state{ handler_module = Module, handler_state = HandlerState }) ->
@@ -310,33 +310,33 @@ handle_info({disconnected}, #state{ handler_module = Module, handler_state = Han
 
 handle_info({offerRescinded, OfferIdBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     OfferId = mesos_pb:decode_msg(OfferIdBin, 'OfferID'),
-    {ok, State1} = Module:offerRescinded(HandlerState,OfferId),
+    {ok, State1} = Module:offerRescinded(OfferId, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({statusUpdate, TaskStatusBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     TaskStatus = mesos_pb:decode_msg(TaskStatusBin, 'TaskStatus'),
-    {ok, State1} = Module:statusUpdate(HandlerState,TaskStatus),
+    {ok, State1} = Module:statusUpdate(TaskStatus, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({frameworkMessage, ExecutorIdBin, SlaveIdBin, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
     SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-    {ok, State1} = Module:frameworkMessage(HandlerState,ExecutorId,SlaveId,Message),
+    {ok, State1} = Module:frameworkMessage(ExecutorId, SlaveId, Message, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({slaveLost, SlaveIdBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-    {ok, State1} = Module:slaveLost(HandlerState,SlaveId),
+    {ok, State1} = Module:slaveLost(SlaveId, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({executorLost, ExecutorIdBin, SlaveIdBin, Status}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     ExecutorId = mesos_pb:decode_msg(ExecutorIdBin, 'ExecutorID'),
     SlaveId = mesos_pb:decode_msg(SlaveIdBin, 'SlaveID'),
-    {ok, State1} = Module:executorLost(HandlerState,ExecutorId,SlaveId,Status),
+    {ok, State1} = Module:executorLost(ExecutorId, SlaveId, Status, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
-    {ok, State1} = Module:error(HandlerState,Message),
+    {ok, State1} = Module:error(Message, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info(_Info, State) ->
@@ -344,8 +344,8 @@ handle_info(_Info, State) ->
     io:format(user, "SCHEDULER: UNKNOWN MESSAGE : ~p~n", [_Info]),
     {noreply, State}.
 
-terminate(_Reason, _State) ->
-    do_terminate(),
+terminate(_Reason,  #state{ handler_module = Module }) ->
+    do_terminate(Module),
     ok.
 
 code_change(_, State, _) ->
@@ -354,7 +354,7 @@ code_change(_, State, _) ->
 % helpers
 int_to_ip(Ip)-> {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}.
 
-do_terminate() -> 
-    unregister(?MODULE),
+do_terminate(Module) -> 
+    unregister(Module),
     scheduler:stop(0),
     scheduler:destroy().
