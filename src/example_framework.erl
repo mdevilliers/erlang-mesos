@@ -24,10 +24,11 @@
 -include_lib("mesos_pb.hrl").
 
 % api
--export ([init/0,init/1, exit/0]).
+-export ([exit/0]).
 
 % from scheduler
--export ([registered/3, 
+-export ([init/1, 
+          registered/3, 
           reregistered/2, 
           disconnected/1, 
           offerRescinded/2, 
@@ -46,40 +47,33 @@
 % Starts up, listens form resource offers, starts one task (example executor), listens for updates
 % When the task stops listens from more resource offers....
 %
+% scheduler:start_link( example_framework, "127.0.1.1:5050").
 
 % api
-init()->
-    init("127.0.1.1:5050").
-
 init(MasterLocation) ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
-    MasterLocation = MasterLocation,
     State = #framework_state{},
-
-    ok = scheduler:init(?MODULE, FrameworkInfo, MasterLocation, State),
-    {ok,Status} = scheduler:start(),
-    Status.
+    {FrameworkInfo, MasterLocation, State}.
 
 exit() ->
     {ok,driver_stopped} = scheduler:stop(0), % stop the scheduler
     ok = scheduler:destroy(). % destroy and cleanup the nif
 
 % call backs
-registered(State, FrameworkID, MasterInfo) ->
+registered(FrameworkID, MasterInfo, State) ->
     io:format("Registered callback : ~p ~p~n", [FrameworkID, MasterInfo]),
     {ok,State}.
 
-reregistered(State, MasterInfo) ->
+reregistered(MasterInfo, State) ->
     io:format("ReRegistered callback : ~p ~n", [MasterInfo]),
     {ok,State}.
 
-resourceOffers(#framework_state{ tasks_started = 1} = State, Offer) ->
+resourceOffers(Offer,#framework_state{ tasks_started = 1} = State) ->
     io:format("Reached max tasks [1] so declining offer.~n", []),
     scheduler:declineOffer(Offer#'Offer'.id),
     {ok,State};
-resourceOffers(State, Offer) ->
+resourceOffers(Offer, State) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
-
     State1 = State#framework_state{tasks_started = 1},
     io:format("Launching Task.", []),
 
@@ -112,33 +106,33 @@ disconnected(State) ->
     io:format("Disconnected callback"),
     {ok,State}.
 
-offerRescinded(State, OfferID) ->
+offerRescinded(OfferID, State) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
 
-statusUpdate( State, {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_}) ->
+statusUpdate( {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_}, State) ->
     io:format("StatusUpdate callback : ~p  -> task running current tasks.~n", ['TASK_RUNNING']),
     {ok,State};
-statusUpdate( State, {'TaskStatus',{'TaskID',_},Message,_,_,_,_}) ->
+statusUpdate( {'TaskStatus',{'TaskID',_},Message,_,_,_,_}, State) ->
     io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
     State1 = State#framework_state{tasks_started = 0},
     {ok,State1};
-statusUpdate(State, StatusUpdate) ->
+statusUpdate(StatusUpdate, State) ->
     io:format("StatusUpdate callback : ~p ~n", [StatusUpdate]),
     {ok,State}. 
 
-frameworkMessage(State, ExecutorID, SlaveID, Message) ->
+frameworkMessage(ExecutorID, SlaveID, Message, State) ->
     io:format("FrameworkMessage callback : ~p ~p ~p ~n", [ExecutorID, SlaveID, Message]),
     {ok,State}.
 
-slaveLost(State, SlaveID) ->
+slaveLost(SlaveID, State) ->
     io:format("SlaveLost callback : ~p ~n", [SlaveID]),
     {ok,State}.
 
-executorLost(State, ExecutorID, SlaveID, Status) ->
+executorLost(ExecutorID, SlaveID, Status, State) ->
     io:format("ExecutorLost callback : ~p ~p ~p ~n", [ExecutorID, SlaveID, Status]),
     {ok,State}.
 
-error(State, Message) ->
+error(Message, State) ->
     io:format("Error callback : ~p ~n", [Message]),
     {ok,State}.
