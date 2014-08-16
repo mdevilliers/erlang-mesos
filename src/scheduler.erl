@@ -246,7 +246,6 @@ init({Module, Args}) ->
     
      case whereis(?MODULE) of
         undefined ->
-            io:format(user ,"registereing module : ~p~n", [?MODULE]),
             register(?MODULE, self()),
             case Module:init(Args) of
              {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
@@ -344,8 +343,8 @@ handle_info(_Info, State) ->
     io:format(user, "SCHEDULER: UNKNOWN MESSAGE : ~p~n", [_Info]),
     {noreply, State}.
 
-terminate(_Reason,  #state{ handler_module = Module }) ->
-    do_terminate(Module),
+terminate(_Reason, _) ->
+    do_terminate(),
     ok.
 
 code_change(_, State, _) ->
@@ -354,7 +353,6 @@ code_change(_, State, _) ->
 % helpers
 int_to_ip(Ip)-> {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}.
 
-do_terminate(Module) -> 
-    unregister(Module),
+do_terminate() -> 
     scheduler:stop(0),
     scheduler:destroy().

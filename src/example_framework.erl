@@ -47,13 +47,13 @@
 % Starts up, listens form resource offers, starts one task (example executor), listens for updates
 % When the task stops listens from more resource offers....
 %
-% scheduler:start(example_framework,[]).
+% scheduler:start_link( example_framework, "127.0.1.1:5050").
 
 % api
 init(MasterLocation) ->
     FrameworkInfo = #'FrameworkInfo'{user="", name="Erlang Test Framework"},
     State = #framework_state{},
-   {FrameworkInfo, MasterLocation, State}.
+    {FrameworkInfo, MasterLocation, State}.
 
 exit() ->
     {ok,driver_stopped} = scheduler:stop(0), % stop the scheduler
@@ -74,7 +74,6 @@ resourceOffers(Offer,#framework_state{ tasks_started = 1} = State) ->
     {ok,State};
 resourceOffers(Offer, State) ->
     io:format("ResourceOffers callback : ~p ~n", [Offer]),
-
     State1 = State#framework_state{tasks_started = 1},
     io:format("Launching Task.", []),
 

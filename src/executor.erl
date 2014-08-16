@@ -223,6 +223,5 @@ terminate(_Reason, _State) ->
 
 % helpers
 do_terminate()->
-    unregister(?MODULE),
     executor:stop(),
     executor:destroy().
