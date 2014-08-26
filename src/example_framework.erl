@@ -84,7 +84,7 @@ resourceOffers(Offer, State) ->
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
 
-    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
+    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor main",
 
     {_,{H,M,S}} = calendar:local_time(),
 
@@ -113,10 +113,10 @@ offerRescinded(OfferID, State) ->
 statusUpdate( {'TaskStatus',{'TaskID',_},'TASK_LOST',Reason,_,_,_,_,_}, State) ->
     io:format("StatusUpdate callback : ~p  -> task lost. Reason : ~p .~n", ['TASK_LOST', Reason]),
     {ok,State};
-statusUpdate( {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_,_}, State) ->
+statusUpdate( {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_,_,_}, State) ->
     io:format("StatusUpdate callback : ~p  -> task running.~n", ['TASK_RUNNING']),
     {ok,State};
-statusUpdate( {'TaskStatus',{'TaskID',_},Message,_,_,_,_,_}, State) ->
+statusUpdate( {'TaskStatus',{'TaskID',_},Message,_,_,_,_,_,_}, State) ->
     io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
     State1 = State#framework_state{tasks_started = 0},
     {ok,State1};

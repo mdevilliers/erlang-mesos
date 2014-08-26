@@ -146,9 +146,8 @@ init({Module, Args}) ->
             register(?MODULE, self()),
             case Module:init(Args) of
              {ok, State} ->
-                    ok = nif_executor:init(?MODULE, []),
-                    {ok,driver_running} = nif_executor:start(),
-                                                  
+                    ok = nif_executor:init(self()),
+                    {ok,driver_running} = nif_executor:start(),               
                     {ok, #state{
                                 handler_module = Module,
                                 handler_state = State
@@ -189,11 +188,13 @@ handle_info({disconnected}, #state{ handler_module = Module, handler_state = Han
 
 handle_info({launchTask, TaskInfoBin}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     TaskInfo = mesos_pb:decode_msg(TaskInfoBin, 'TaskInfo'),
+
     {ok, State1} = Module:launchTask(TaskInfo, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
 handle_info({killTask, TaskIDBin} , #state{ handler_module = Module, handler_state = HandlerState }) ->
     TaskID = mesos_pb:decode_msg(TaskIDBin, 'TaskID'),
+    
     {ok, State1} = Module:killTask(TaskID, HandlerState),
     {noreply, #state{ handler_module = Module, handler_state = State1 }};
 
