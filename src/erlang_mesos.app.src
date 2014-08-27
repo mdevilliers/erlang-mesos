@@ -3,6 +3,6 @@
   {description, ""},
   {vsn, "0.20.0"},
   {registered, []},
-  {applications, []}
+  {applications, [kernel,stdlib]}
  ]}.
 
