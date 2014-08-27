@@ -24,10 +24,7 @@
 -include_lib("mesos_pb.hrl").
 
 % api
--export ([exit/0]).    
-
-% private
--export ([start/0]).
+-export ([main/0, exit/0]).    
 
 % from gen_executor
 -export ([init/1,
@@ -46,15 +43,11 @@
 % Starts up, sends a framework message, sends some task updates, sleeps for a while then closes.
 %
 
-init(_State)->
-    spawn(?MODULE, start, []), % register with mesos
-    timer:sleep(infinity), % block while I do my business
-    {ok, []}.
+main() ->
+    executor:start_link( example_executor, []).
 
-start()->
-    ok = executor:init(?MODULE, []),
-    {ok,_} = executor:start(),
-    executor:sendFrameworkMessage("hello from the executor's start method").
+init(_State)->
+    {ok, []}.
 
 exit() ->
     {ok,driver_stopped} = executor:stop(), % stop the executor
@@ -65,6 +58,7 @@ exit() ->
 % call backs
 registered(ExecutorInfo, FrameworkInfo, SlaveInfo, State) ->
     io:format("Registered callback : ~p ~p ~p~n", [ExecutorInfo, FrameworkInfo, SlaveInfo]),
+    executor:sendFrameworkMessage("hello from the executor's registered callback"),
     {ok,State}.
 
 reregistered(SlaveInfo, State) ->

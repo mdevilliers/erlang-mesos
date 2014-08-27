@@ -39,13 +39,15 @@
           error/2,
           resourceOffers/2]).
 
+-include_lib("mesos_pb.hrl").
+
 -record (framework_state, { tasks_started = 0 }).
 
 %
 % Example framework (scheduler)
 %
-% Starts up, listens form resource offers, starts one task (example executor), listens for updates
-% When the task stops listens from more resource offers....
+% Starts up, listens for resource offers, starts one task (the example executor), listens for updates
+% When the task stops listens for more resource offers....
 %
 % scheduler:start_link( example_framework, "127.0.1.1:5050").
 
@@ -84,7 +86,7 @@ resourceOffers(Offer, State) ->
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
 
-    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor init",
+    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor main",
 
     {_,{H,M,S}} = calendar:local_time(),
 
@@ -110,10 +112,13 @@ offerRescinded(OfferID, State) ->
     io:format("OfferRescinded callback : ~p ~n", [OfferID]),
     {ok,State}.
 
-statusUpdate( {'TaskStatus',{'TaskID',_},'TASK_RUNNING',_,_,_,_}, State) ->
-    io:format("StatusUpdate callback : ~p  -> task running current tasks.~n", ['TASK_RUNNING']),
+statusUpdate( #'TaskStatus'{state='TASK_LOST',message=Reason}, State) ->
+    io:format("StatusUpdate callback : ~p  -> task lost. Reason : ~p .~n", ['TASK_LOST', Reason]),
     {ok,State};
-statusUpdate( {'TaskStatus',{'TaskID',_},Message,_,_,_,_}, State) ->
+statusUpdate(#'TaskStatus'{state='TASK_RUNNING'}, State) ->
+    io:format("StatusUpdate callback : ~p  -> task running.~n", ['TASK_RUNNING']),
+    {ok,State};
+statusUpdate( #'TaskStatus'{ message=Message}, State) ->
     io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
     State1 = State#framework_state{tasks_started = 0},
     {ok,State1};
