@@ -113,9 +113,9 @@ destroy()->
 
 
 % nif functions
-nif_scheduler_init(_, _, _,_)->
+nif_scheduler_init(_, _, _, _)->
     not_loaded(?LINE).
-nif_scheduler_init(_, _,_)->
+nif_scheduler_init(_, _, _)->
     not_loaded(?LINE).
 nif_scheduler_start() ->
     not_loaded(?LINE).
