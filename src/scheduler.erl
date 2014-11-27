@@ -250,7 +250,6 @@ init({Module, Args}) ->
             case Module:init(Args) of
              {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                          is_list(MasterLocation) ->
-                    
                     ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
                     {ok,driver_running} = nif_scheduler:start(),                                    
                     {ok, #state{
