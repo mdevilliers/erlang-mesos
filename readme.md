@@ -2,7 +2,7 @@ erlang-mesos
 ------------
 
 An erlang binding for [mesos](http://mesos.apache.org/).
-Currently supports the 0.21.0 version - see [releases](https://github.com/mdevilliers/erlang-mesos/releases) for previous releases.
+Currently supports the 0.22.0 version - see [releases](https://github.com/mdevilliers/erlang-mesos/releases) for previous releases.
 
 How does it work
 ----------------
@@ -118,16 +118,6 @@ To debug mesos you can use the following enviromental variable before starting u
 ```
 GLOG_v=1 erl -pa ebin
 ```
-
-Todo
-----
-
-1. Move to the low-level wire protocol
-
-Until the above is done continue -
-
-1. c/c++ code review
-2. investigate using a port rather than a nif 
 
 Thanks
 ------
