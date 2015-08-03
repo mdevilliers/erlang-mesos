@@ -335,12 +335,7 @@ handle_info({executorLost, ExecutorIdBin, SlaveIdBin, Status}, #state{ handler_m
 
 handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     {ok, State1} = Module:error(Message, HandlerState),
-    {noreply, #state{ handler_module = Module, handler_state = State1 }};
-
-handle_info(_Info, State) ->
-    % TODO : Resolve this
-    io:format(user, "SCHEDULER: UNKNOWN MESSAGE : ~p~n", [_Info]),
-    {noreply, State}.
+    {noreply, #state{ handler_module = Module, handler_state = State1 }}.
 
 terminate(_Reason, _) ->
     do_terminate(),
