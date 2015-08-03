@@ -86,7 +86,7 @@ resourceOffers(Offer, State) ->
     % will only work in development but proves the point
     {ok, CurrentFolder } = file:get_cwd(),
 
-    Command = "export HOME=/root && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor main",
+    Command = "export HOME=. && cd " ++ CurrentFolder ++" && erl -pa ebin -noshell -noinput -run example_executor main",
 
     {_,{H,M,S}} = calendar:local_time(),
 
