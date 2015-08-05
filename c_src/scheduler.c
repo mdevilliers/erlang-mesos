@@ -27,7 +27,7 @@
 #define MAXBUFLEN 1024
 
 static int
-load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
+scheduler_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 {
     state_ptr state = (state_ptr) enif_alloc(sizeof(struct state_t));
     state->initilised = 0;
@@ -36,10 +36,16 @@ load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
 }
 
 static void
-unload(ErlNifEnv* env, void* priv)
+scheduler_unload(ErlNifEnv* env, void* priv)
 {
     state_ptr state = (state_ptr) priv;
     enif_free(state);
+}
+
+static int 
+scheduler_upgrade(ErlNifEnv* env, void** priv, void** old_priv_data, ERL_NIF_TERM load_info)
+{
+    return scheduler_load(env, priv, load_info);
 }
 
 static ERL_NIF_TERM
@@ -449,4 +455,4 @@ static ErlNifFunc nif_funcs[] = {
     {"nif_scheduler_destroy" , 0, nif_scheduler_destroy}
 };
 
-ERL_NIF_INIT(nif_scheduler, nif_funcs, load, NULL, NULL, unload);
+ERL_NIF_INIT(nif_scheduler, nif_funcs, scheduler_load, NULL, scheduler_upgrade, scheduler_unload);

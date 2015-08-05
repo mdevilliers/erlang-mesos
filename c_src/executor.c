@@ -42,6 +42,12 @@ executor_unload(ErlNifEnv* env, void* priv)
     enif_free(state);
 }
 
+static int 
+executor_upgrade(ErlNifEnv* env, void** priv, void** old_priv_data, ERL_NIF_TERM load_info)
+{
+    return executor_load(env, priv, load_info);
+}
+
 static ERL_NIF_TERM
 nif_executor_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -231,4 +237,4 @@ static ErlNifFunc executor_nif_funcs[] = {
     
 };
 
-ERL_NIF_INIT(nif_executor, executor_nif_funcs, executor_load, NULL, NULL, executor_unload);
+ERL_NIF_INIT(nif_executor, executor_nif_funcs, executor_load, NULL, executor_upgrade, executor_unload);
