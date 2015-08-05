@@ -1,0 +1,22 @@
+language: erlang
+otp_release:
+   - 17.5
+   - 18.0
+before_install: 
+    - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv E56151BF
+    - DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+    - CODENAME=$(lsb_release -cs)
+    - echo "deb http://repos.mesosphere.io/${DISTRO} ${CODENAME} main" | sudo tee /etc/apt/sources.list.d/mesosphere.list
+    - sudo apt-get -y update	
+    - sudo apt-get -y install mesos
+    - wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
+    - tar xzvf protobuf-2.5.0.tar.gz
+    - cd protobuf-2.5.0
+    - ./configure
+    - make
+    - make check
+    - sudo make install
+    - cd ..
+    - ./rebar get-deps
+after_success:
+    - ./rebar eunit skip_deps=true
