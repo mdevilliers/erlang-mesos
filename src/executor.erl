@@ -127,7 +127,12 @@ sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
 
 destroy() ->
     Response = nif_executor:destroy(),
-    unregister(?MODULE),
+
+    case whereis(?MODULE) of
+        undefined  -> ok;
+        _ -> unregister(?MODULE)
+    end,
+    
     Response.
     
 %% -----------------------------------------------------------------------------------------

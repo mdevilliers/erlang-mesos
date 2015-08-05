@@ -232,7 +232,12 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
 -spec destroy() -> ok | {error, scheduler_not_inited}.
 destroy() ->
     Response = nif_scheduler:destroy(),
-    unregister(?MODULE),
+
+    case whereis(?MODULE) of
+        undefined  -> ok;
+        _ -> unregister(?MODULE)
+    end,
+
     Response.
 
 %% -----------------------------------------------------------------------------------------
