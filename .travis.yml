@@ -13,15 +13,10 @@ before_install:
     - sudo apt-get -y update	
     - sudo apt-get -y install mesos g++-4.8
     - export CXX="g++-4.8" CC="gcc-4.8"
-    - export LIBPROCESS_IP=127.0.1.1
     - sudo service mesos-master start
     - sudo service mesos-slave start
     - wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
     - tar xzvf protobuf-2.5.0.tar.gz
-    - cd protobuf-2.5.0
-    - ./configure
-    - make
-    - make check
-    - sudo make install
+    - cd protobuf-2.5.0 && ./configure && make && sudo make install
     - cd ..
     - ./rebar get-deps
