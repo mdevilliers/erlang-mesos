@@ -127,7 +127,12 @@ sendStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
 
 destroy() ->
     Response = nif_executor:destroy(),
-    unregister(?MODULE),
+
+    case whereis(?MODULE) of
+        undefined  -> ok;
+        _ -> unregister(?MODULE)
+    end,
+    
     Response.
     
 %% -----------------------------------------------------------------------------------------
@@ -208,12 +213,7 @@ handle_info({shutdown}, #state{ handler_module = Module, handler_state = Handler
 
 handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     {ok, State1} = Module:error(Message, HandlerState),
-    {noreply, #state{ handler_module = Module, handler_state = State1 }};
-
-handle_info(_Info, State) ->
-    % TODO : Resolve this
-    io:format(user, "EXECUTOR: UNKNOWN MESSAGE : ~p~n", [_Info]),
-    {noreply, State}.
+    {noreply, #state{ handler_module = Module, handler_state = State1 }}.
 
 code_change(_, State, _) ->
   {ok, State}.

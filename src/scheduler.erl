@@ -232,7 +232,12 @@ launchTasks(OfferId, TaskInfos, Filter) when is_record(OfferId, 'OfferID'),
 -spec destroy() -> ok | {error, scheduler_not_inited}.
 destroy() ->
     Response = nif_scheduler:destroy(),
-    unregister(?MODULE),
+
+    case whereis(?MODULE) of
+        undefined  -> ok;
+        _ -> unregister(?MODULE)
+    end,
+
     Response.
 
 %% -----------------------------------------------------------------------------------------
@@ -335,12 +340,7 @@ handle_info({executorLost, ExecutorIdBin, SlaveIdBin, Status}, #state{ handler_m
 
 handle_info({error, Message}, #state{ handler_module = Module, handler_state = HandlerState }) ->
     {ok, State1} = Module:error(Message, HandlerState),
-    {noreply, #state{ handler_module = Module, handler_state = State1 }};
-
-handle_info(_Info, State) ->
-    % TODO : Resolve this
-    io:format(user, "SCHEDULER: UNKNOWN MESSAGE : ~p~n", [_Info]),
-    {noreply, State}.
+    {noreply, #state{ handler_module = Module, handler_state = State1 }}.
 
 terminate(_Reason, _) ->
     do_terminate(),
