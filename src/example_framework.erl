@@ -118,8 +118,8 @@ statusUpdate( #'TaskStatus'{state='TASK_LOST',message=Reason}, State) ->
 statusUpdate(#'TaskStatus'{state='TASK_RUNNING'}, State) ->
     io:format("StatusUpdate callback : ~p  -> task running.~n", ['TASK_RUNNING']),
     {ok,State};
-statusUpdate( #'TaskStatus'{ message=Message}, State) ->
-    io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", [Message]),
+statusUpdate( #'TaskStatus'{ state='TASK_FINISHED'}, State) ->
+    io:format("StatusUpdate callback : ~p  -> decrementing current tasks.~n", ['TASK_FINISHED']),
     State1 = State#framework_state{tasks_started = 0},
     {ok,State1};
 statusUpdate(StatusUpdate, State) ->
