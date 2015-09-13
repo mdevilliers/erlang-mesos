@@ -193,6 +193,67 @@ nif_scheduler_stop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+nif_scheduler_acceptOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
+    unsigned int ids_length ;
+    unsigned int ops_length ;
+
+    state_ptr state = (state_ptr) enif_priv_data(env);
+    
+    if(state->initilised == 0 ) 
+    {
+        return enif_make_tuple2(env, 
+            enif_make_atom(env, "error"), 
+            enif_make_atom(env, "scheduler_not_inited"));
+    }
+
+    if(!enif_is_list(env, argv[0])) 
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    };
+
+    if(!enif_get_list_length(env, argv[0], &ids_length))
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    }
+    if(!enif_is_list(env, argv[1])) 
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    };
+
+    if(!enif_get_list_length(env, argv[1], &ops_length))
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    }
+
+    ErlNifBinary ids_binary_arr[ids_length];
+    if(!inspect_array_of_binary_objects(env, argv[0], ids_binary_arr ))
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    }
+    ErlNifBinary ops_binary_arr[ops_length];
+    if(!inspect_array_of_binary_objects(env, argv[1], ops_binary_arr ))
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+    }
+    ErlNifBinary filters_binary;
+    if (!enif_inspect_binary(env, argv[2], &filters_binary)) 
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "filters");
+    }
+
+    BinaryNifArray ids_binaryNifArrayHolder ;
+    ids_binaryNifArrayHolder.length = ids_length;
+    ids_binaryNifArrayHolder.obj = &ids_binary_arr[0];
+    BinaryNifArray ops_binaryNifArrayHolder ;
+    ops_binaryNifArrayHolder.length = ops_length;
+    ops_binaryNifArrayHolder.obj = &ops_binary_arr[0];
+
+    SchedulerDriverStatus status =  scheduler_acceptOffers(
+        state->scheduler_state, &ids_binaryNifArrayHolder, &ops_binaryNifArrayHolder, &filters_binary);
+    return get_return_value_from_status(env, status);
+}
+
+static ERL_NIF_TERM
 nif_scheduler_declineOffer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
     ErlNifBinary offerId_binary;
@@ -445,6 +506,7 @@ static ErlNifFunc nif_funcs[] = {
     {"nif_scheduler_join", 0, nif_scheduler_join},
     {"nif_scheduler_abort", 0, nif_scheduler_abort},
     {"nif_scheduler_stop", 1, nif_scheduler_stop},
+    {"nif_scheduler_acceptOffers", 3,nif_scheduler_acceptOffers},
     {"nif_scheduler_declineOffer", 2,nif_scheduler_declineOffer},
     {"nif_scheduler_killTask", 1,nif_scheduler_killTask},
     {"nif_scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},

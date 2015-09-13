@@ -28,6 +28,8 @@
             join/0,
             abort/0,
             stop/1,
+            acceptOffers/2,
+            acceptOffers/3,
             declineOffer/1,
             declineOffer/2,
             killTask/1,
@@ -68,6 +70,15 @@ stop(Failover) when is_integer(Failover),
                                 Failover > -1, 
                                 Failover < 2 ->
     nif_scheduler_stop(Failover).
+
+acceptOffers(OfferIDs, Operations) ->
+  acceptOffers(OfferIDs, Operations, #'Filters'{}).
+acceptOffers(OfferIDs, Operations, Filters) ->
+    nif_scheduler_acceptOffers(
+      encode_array(OfferIDs, []),
+      encode_array(Operations, []),
+      mesos_pb:encode_msg(Filters)
+     ).
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     Filter = #'Filters'{},
@@ -124,6 +135,8 @@ nif_scheduler_join() ->
 nif_scheduler_abort() ->
     not_loaded(?LINE).
 nif_scheduler_stop(_) ->
+    not_loaded(?LINE).
+nif_scheduler_acceptOffers(_, _, _)->
     not_loaded(?LINE).
 nif_scheduler_declineOffer(_,_)->
     not_loaded(?LINE).
