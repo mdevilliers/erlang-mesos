@@ -22,8 +22,8 @@
 
 -include_lib("mesos_pb.hrl").
 
--export ([  init/4,
-            init/3,
+-export ([  init/5,
+            init/4,
             start/0,
             join/0,
             abort/0,
@@ -37,23 +37,26 @@
             reconcileTasks/1,
             launchTasks/2,
             launchTasks/3,
-            destroy/0]).
+            destroy/0,
+            acknowledgeStatusUpdate/1]).
 
 -on_load(init/0).
 
 -define(APPNAME, erlang_mesos).
 -define(LIBNAME, scheduler).
 
-init(Pid, FrameworkInfo, MasterLocation, Credential) when is_pid(Pid), 
+init(Pid, FrameworkInfo, MasterLocation, ImplicitAcknowledgements, Credential) when is_pid(Pid), 
                                                             is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                             is_list(MasterLocation),
+                                                            is_boolean(ImplicitAcknowledgements),
                                                             is_record(Credential,'Credential')->
-    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation, mesos_pb:encode_msg(Credential)).
+    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation, bool_to_int(ImplicitAcknowledgements), mesos_pb:encode_msg(Credential)).
 
-init(Pid, FrameworkInfo, MasterLocation) when is_pid(Pid), 
+init(Pid, FrameworkInfo, MasterLocation, ImplicitAcknowledgements) when is_pid(Pid), 
                                                 is_record(FrameworkInfo, 'FrameworkInfo'), 
-                                                is_list(MasterLocation)->
-    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation).
+                                                is_list(MasterLocation),
+                                                is_boolean(ImplicitAcknowledgements)->
+    nif_scheduler_init(Pid, mesos_pb:encode_msg(FrameworkInfo), MasterLocation, bool_to_int(ImplicitAcknowledgements)).
 
 start() ->
     nif_scheduler_start().
@@ -97,7 +100,7 @@ reconcileTasks(TaskStatuss) when is_list(TaskStatuss)->
     nif_scheduler_reconcileTasks(EncodedTaskStatus).
 
 launchTasks(OfferId, TaskInfos ) when is_record(OfferId, 'OfferID'), 
-                                      is_list(TaskInfos) ->
+                                        is_list(TaskInfos) ->
     EncodedTaskInfos = encode_array(TaskInfos, []),
     Filter = #'Filters'{},
     nif_scheduler_launchTasks(mesos_pb:encode_msg(OfferId), EncodedTaskInfos, mesos_pb:encode_msg(Filter)).
@@ -111,11 +114,13 @@ launchTasks(OfferId, TaskInfos, Filter ) when is_record(OfferId, 'OfferID'),
 destroy()->
     nif_scheduler_destroy().
 
+acknowledgeStatusUpdate(TaskStatus) when is_record(TaskStatus, 'TaskStatus') ->
+    nif_scheduler_acknowledgeStatusUpdate(mesos_pb:encode_msg(TaskStatus)).
 
 % nif functions
-nif_scheduler_init(_, _, _, _)->
+nif_scheduler_init(_, _, _, _, _)->
     not_loaded(?LINE).
-nif_scheduler_init(_, _, _)->
+nif_scheduler_init(_, _, _, _)->
     not_loaded(?LINE).
 nif_scheduler_start() ->
     not_loaded(?LINE).
@@ -141,6 +146,8 @@ nif_scheduler_launchTasks(_,_,_) ->
     not_loaded(?LINE).
 nif_scheduler_destroy() ->
     not_loaded(?LINE).
+nif_scheduler_acknowledgeStatusUpdate(_) ->
+    not_loaded(?LINE).
 
 init() ->
     SoName = case code:priv_dir(?APPNAME) of
@@ -160,6 +167,9 @@ not_loaded(Line) ->
     exit({not_loaded, [{module, ?MODULE}, {line, Line}]}).
 
 % helpers
+bool_to_int(true) -> 1;
+bool_to_int(false) -> 0.
+
 encode_array([], Acc) -> Acc;
 encode_array([H|T], Acc) -> 
     encode_array(T, [mesos_pb:encode_msg(H) | Acc]).

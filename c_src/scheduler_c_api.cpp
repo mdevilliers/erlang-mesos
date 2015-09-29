@@ -153,6 +153,7 @@ public:
 SchedulerPtrPair scheduler_init(ErlNifPid* pid, 
                                 ErlNifBinary* info, 
                                 const char* master, 
+                                int implicitAcknowledgements,
                                 int credentialssupplied,
                                 ErlNifBinary* credentials)
 {
@@ -177,13 +178,15 @@ SchedulerPtrPair scheduler_init(ErlNifPid* pid,
                                        scheduler,
                                        scheduler->info,
                                        std::string(master),
+                                       implicitAcknowledgements == 1 ? true : false,
                                        credentials_pb);
     }else
     {
       driver = new MesosSchedulerDriver(
                                      scheduler,
                                      scheduler->info,
-                                     std::string(master));
+                                     std::string(master),
+                                     implicitAcknowledgements == 1 ? true : false);
     }
 
     ret.driver = driver;
@@ -346,6 +349,23 @@ void scheduler_destroy (SchedulerPtrPair state)
     delete driver;
     delete scheduler;
 }
+
+  SchedulerDriverStatus scheduler_acknowledgeStatusUpdate(SchedulerPtrPair state, 
+                                                          ErlNifBinary* taskStatus)
+{
+   assert(state.driver != NULL);
+   assert(taskStatus != NULL);
+
+   TaskStatus taskStatus_pb;
+
+   if(!deserialize<TaskStatus>(taskStatus_pb,taskStatus)) { return DRIVER_ABORTED; };
+
+   MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+   return driver->acknowledgeStatusUpdate(taskStatus_pb);
+
+}
+
+
 /** 
   Callbacks
 
