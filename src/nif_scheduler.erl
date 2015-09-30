@@ -71,14 +71,13 @@ stop(Failover) when is_integer(Failover),
                                 Failover < 2 ->
     nif_scheduler_stop(Failover).
 
-acceptOffers(OfferIDs, Operations) ->
+acceptOffers(OfferIDs, Operations) when is_list(OfferIDs), 
+                                        is_list(Operations) ->
   acceptOffers(OfferIDs, Operations, #'Filters'{}).
-acceptOffers(OfferIDs, Operations, Filters) ->
-    nif_scheduler_acceptOffers(
-      encode_array(OfferIDs, []),
-      encode_array(Operations, []),
-      mesos_pb:encode_msg(Filters)
-     ).
+acceptOffers(OfferIDs, Operations, Filters) when is_list(OfferIDs), 
+                                                 is_list(Operations),
+                                                 is_record(Filters, 'Filters') ->
+    nif_scheduler_acceptOffers( encode_array(OfferIDs, []), encode_array(Operations, []), mesos_pb:encode_msg(Filters)).
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     Filter = #'Filters'{},
