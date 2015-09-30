@@ -124,4 +124,6 @@ GLOG_v=1 erl -pa ebin
 Thanks
 ------
 
+Special thanks goes to [mokele](https://github.com/mokele) for the acceptOffer implementation.
+
 [mesos-go](https://github.com/mesosphere/mesos-go) was an extremely helpful examplar
