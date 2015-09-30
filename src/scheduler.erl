@@ -39,7 +39,8 @@
         reconcileTasks/1,
         launchTasks/2,
         launchTasks/3,
-        destroy/0]).
+        destroy/0,
+        acknowledgeStatusUpdate/1]).
 
 %gen server
 -export([init/1, handle_call/3, handle_info/2, terminate/2, handle_cast/2,
@@ -49,8 +50,10 @@
 -include_lib("mesos_erlang.hrl").
 
 % callback specifications
--callback init( Args :: any()) -> {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), State :: any()} | 
-                                    {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation  :: string(), Credential :: #'Credential'{}, State :: any()}.
+-callback init( Args :: any()) -> {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), State :: any()} | 
+                                  {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), ImplicitAcknowledgements :: boolean(), State :: any()} | 
+                                  {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), Credential :: #'Credential'{}, State :: any()} | 
+                                  {FrameworkInfo :: #'FrameworkInfo'{}, MasterLocation :: string(), ImplicitAcknowledgements :: boolean(), Credential :: #'Credential'{}, State :: any()}.
 
 -callback registered( FrameworkInfo :: #'FrameworkInfo'{}, 
                       MasterInfo :: #'MasterInfo'{},
@@ -267,6 +270,16 @@ destroy() ->
     Response.
 
 %% -----------------------------------------------------------------------------------------
+
+-spec acknowledgeStatusUpdate(TaskStatus :: #'TaskStatus'{}) ->
+                                 {ok, driver_running }
+                                | {error, scheduler_not_inited} 
+                                | {error, {invalid_or_corrupted_parameter, task_status}}
+                                | {error, driver_state()}. 
+acknowledgeStatusUpdate( TaskStatus ) when is_record(TaskStatus, 'TaskStatus') ->
+    nif_scheduler:acknowledgeStatusUpdate(TaskStatus).
+
+%% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% -----------------------------------------------------------------------------------------
 %% Gen Server Implementation
@@ -279,10 +292,30 @@ init({Module, Args}) ->
         undefined ->
             register(?MODULE, self()),
             case Module:init(Args) of
+             {FrameworkInfo, MasterLocation, ImplicitAcknowledgements, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                                                is_list(MasterLocation),
+                                                                                is_boolean(ImplicitAcknowledgements) ->
+                                                 
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation, ImplicitAcknowledgements), 
+                    {ok,driver_running} = nif_scheduler:start(),                                    
+                    {ok, #state{
+                                handler_module = Module,
+                                handler_state = State
+                            }};
              {FrameworkInfo, MasterLocation, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                          is_list(MasterLocation) ->
-                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation), 
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation, true), 
                     {ok,driver_running} = nif_scheduler:start(),                                    
+                    {ok, #state{
+                                handler_module = Module,
+                                handler_state = State
+                            }};
+             {FrameworkInfo, MasterLocation, ImplicitAcknowledgements, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
+                                                                is_list(MasterLocation),
+                                                                is_boolean(ImplicitAcknowledgements),
+                                                                is_record(Credential, 'Credential') ->
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation, ImplicitAcknowledgements, Credential),
+                    {ok,driver_running} = nif_scheduler:start(),  
                     {ok, #state{
                                 handler_module = Module,
                                 handler_state = State
@@ -290,7 +323,7 @@ init({Module, Args}) ->
              {FrameworkInfo, MasterLocation, Credential, State} when is_record(FrameworkInfo, 'FrameworkInfo'), 
                                                                 is_record(Credential, 'Credential'),
                                                                 is_list(MasterLocation) ->
-                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation,Credential),
+                    ok = nif_scheduler:init(self(), FrameworkInfo, MasterLocation, true, Credential),
                     {ok,driver_running} = nif_scheduler:start(),  
                     {ok, #state{
                                 handler_module = Module,

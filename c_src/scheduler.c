@@ -54,6 +54,7 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ErlNifBinary frameworkInfo_binary;
     ErlNifBinary credentials_binary;
     char masterUrl[MAXBUFLEN];
+    int implicitAcknowledgements = 1 ;
 
     state_ptr state = (state_ptr) enif_priv_data(env);
     
@@ -80,18 +81,23 @@ nif_scheduler_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
         return make_argument_error(env, "invalid_or_corrupted_parameter", "master_info");   
     }
-
-    if(argc == 4 )
+    
+    if(!enif_get_int(env, argv[3], &implicitAcknowledgements))
     {
-        if(!enif_inspect_binary(env,argv[3], &credentials_binary))
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "implicit_acknowledgements");   
+    }
+
+    if(argc == 5 )
+    {
+        if(!enif_inspect_binary(env,argv[4], &credentials_binary))
         {       
             return make_argument_error(env, "invalid_or_corrupted_parameter", "credential");    
         }
-        state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 1, &credentials_binary);
+        state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, implicitAcknowledgements, 1, &credentials_binary);
     }
     else
     {
-        state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, 0, &credentials_binary);
+        state->scheduler_state = scheduler_init(pid, &frameworkInfo_binary, masterUrl, implicitAcknowledgements, 0, &credentials_binary);
     }
     state->initilised = 1;
     return enif_make_atom(env, "ok");
@@ -499,9 +505,32 @@ nif_scheduler_destroy(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
     return enif_make_atom(env, "ok");
 }
 
+static ERL_NIF_TERM
+nif_scheduler_acknowledgeStatusUpdate(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
+
+    state_ptr state = (state_ptr) enif_priv_data(env);
+    
+    ErlNifBinary task_status_binary;
+
+    if(state->initilised == 0 ) 
+    {
+        return enif_make_tuple2(env, 
+            enif_make_atom(env, "error"), 
+            enif_make_atom(env, "scheduler_not_inited"));
+    }
+
+    if (!enif_inspect_binary(env, argv[0], &task_status_binary)) 
+    {
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "task_status");
+    }
+
+    SchedulerDriverStatus status = scheduler_acknowledgeStatusUpdate(state->scheduler_state, &task_status_binary);
+    return get_return_value_from_status(env, status);
+}
+
 static ErlNifFunc nif_funcs[] = {
-    {"nif_scheduler_init", 3, nif_scheduler_init},
     {"nif_scheduler_init", 4, nif_scheduler_init},
+    {"nif_scheduler_init", 5, nif_scheduler_init},
     {"nif_scheduler_start", 0, nif_scheduler_start},
     {"nif_scheduler_join", 0, nif_scheduler_join},
     {"nif_scheduler_abort", 0, nif_scheduler_abort},
@@ -511,10 +540,11 @@ static ErlNifFunc nif_funcs[] = {
     {"nif_scheduler_killTask", 1,nif_scheduler_killTask},
     {"nif_scheduler_reviveOffers", 0 , nif_scheduler_reviveOffers},
     {"nif_scheduler_sendFrameworkMessage", 3, nif_scheduler_sendFrameworkMessage},
-    {"nif_scheduler_requestResources",1, nif_scheduler_requestResources},
-    {"nif_scheduler_reconcileTasks",1,nif_scheduler_reconcileTasks},
-    {"nif_scheduler_launchTasks",3,nif_scheduler_launchTasks},
-    {"nif_scheduler_destroy" , 0, nif_scheduler_destroy}
+    {"nif_scheduler_requestResources", 1, nif_scheduler_requestResources},
+    {"nif_scheduler_reconcileTasks", 1,nif_scheduler_reconcileTasks},
+    {"nif_scheduler_launchTasks", 3,nif_scheduler_launchTasks},
+    {"nif_scheduler_destroy", 0, nif_scheduler_destroy},
+    {"nif_scheduler_acknowledgeStatusUpdate", 1, nif_scheduler_acknowledgeStatusUpdate}
 };
 
 ERL_NIF_INIT(nif_scheduler, nif_funcs, scheduler_load, NULL, scheduler_upgrade, scheduler_unload);

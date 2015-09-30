@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-  SchedulerPtrPair scheduler_init(ErlNifPid* pid, ErlNifBinary* info, const char* master, int credentialssupplied, ErlNifBinary* credentials);
+  SchedulerPtrPair scheduler_init(ErlNifPid* pid, ErlNifBinary* info, const char* master, int implicitAcknoledgements, int credentialssupplied, ErlNifBinary* credentials);
   SchedulerDriverStatus scheduler_start(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
@@ -41,6 +41,7 @@ extern "C" {
   SchedulerDriverStatus scheduler_reconcileTasks(SchedulerPtrPair state, BinaryNifArray* taskStatus);
   SchedulerDriverStatus scheduler_launchTasks(SchedulerPtrPair state, ErlNifBinary* offerId, BinaryNifArray* tasks, ErlNifBinary* filters);
   void scheduler_destroy (SchedulerPtrPair state);
+  SchedulerDriverStatus scheduler_acknowledgeStatusUpdate(SchedulerPtrPair state, ErlNifBinary* taskStatus);
 
 #ifdef __cplusplus
 }
