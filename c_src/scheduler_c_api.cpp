@@ -227,6 +227,24 @@ SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover)
     }
 }
 
+SchedulerDriverStatus scheduler_acceptOffers(SchedulerPtrPair state, BinaryNifArray* offerIds, BinaryNifArray* operations, ErlNifBinary* filters)
+ {
+    assert(state.driver != NULL);
+    assert(offerIds != NULL);
+    assert(operations != NULL);
+
+    vector<OfferID> offerIds_;
+    if(! deserialize<OfferID>( offerIds_, offerIds)) {return DRIVER_ABORTED;};
+    vector<Offer::Operation> operations_;
+    if(! deserialize<Offer::Operation>( operations_, operations)) {return DRIVER_ABORTED;};
+
+    Filters filter_pb;
+
+    if(!deserialize<Filters>(filter_pb,filters)) { return DRIVER_ABORTED; };
+
+    MesosSchedulerDriver* driver = reinterpret_cast<MesosSchedulerDriver*> (state.driver);
+    return driver->acceptOffers(offerIds_, operations_, filter_pb);
+ }
 SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters)
  {
     assert(state.driver != NULL);
@@ -511,7 +529,7 @@ void CScheduler::resourceOffers(SchedulerDriver* driver,
 
       ErlNifEnv* env = enif_alloc_env();
 
-      for(uint i = 0 ; i < offers.size(); i++)
+      for(int i = 0 ; i < offers.size(); i++)
       {
         Offer offer = offers.at(i);
 

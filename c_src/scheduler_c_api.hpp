@@ -32,6 +32,7 @@ extern "C" {
   SchedulerDriverStatus scheduler_join(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_abort(SchedulerPtrPair state);
   SchedulerDriverStatus scheduler_stop(SchedulerPtrPair state, int failover);
+  SchedulerDriverStatus scheduler_acceptOffers(SchedulerPtrPair state, BinaryNifArray* offerIds, BinaryNifArray* operations, ErlNifBinary* filters);
   SchedulerDriverStatus scheduler_declineOffer(SchedulerPtrPair state, ErlNifBinary* offerId, ErlNifBinary* filters);
   SchedulerDriverStatus scheduler_killTask(SchedulerPtrPair state, ErlNifBinary* taskId);
   SchedulerDriverStatus scheduler_reviveOffers(SchedulerPtrPair state);
