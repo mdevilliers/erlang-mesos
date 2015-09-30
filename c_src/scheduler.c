@@ -208,32 +208,32 @@ nif_scheduler_acceptOffers(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
 
     if(!enif_is_list(env, argv[0])) 
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "offerid_array");
     };
 
     if(!enif_get_list_length(env, argv[0], &ids_length))
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "offerid_array");
     }
     if(!enif_is_list(env, argv[1])) 
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "operations_array");
     };
 
     if(!enif_get_list_length(env, argv[1], &ops_length))
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "operations_array");
     }
 
     ErlNifBinary ids_binary_arr[ids_length];
     if(!inspect_array_of_binary_objects(env, argv[0], ids_binary_arr ))
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "offerid_array");
     }
     ErlNifBinary ops_binary_arr[ops_length];
     if(!inspect_array_of_binary_objects(env, argv[1], ops_binary_arr ))
     {
-        return make_argument_error(env, "invalid_or_corrupted_parameter", "request_array");
+        return make_argument_error(env, "invalid_or_corrupted_parameter", "operations_array");
     }
     ErlNifBinary filters_binary;
     if (!enif_inspect_binary(env, argv[2], &filters_binary)) 

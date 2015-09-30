@@ -122,6 +122,30 @@ stop(Failover) when is_integer(Failover),
 
 %% -----------------------------------------------------------------------------------------
 
+-spec acceptOffers( OfferIDs :: list(#'OfferID'{}),
+                    Operations :: list(#'Offer.Operation'{})) -> 
+                      {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offerid_array}}
+                    | {error, {invalid_or_corrupted_parameter, operations_array}}
+                    | {error, driver_state()}.
+acceptOffers(OfferIDs, Operations) ->
+  nif_scheduler:acceptOffers(OfferIDs, Operations).
+
+-spec acceptOffers( OfferIDs :: list(#'OfferID'{}),
+                    Operations :: list(#'Offer.Operation'{}),
+                    Filters :: #'Filters'{}) ->  
+                      {ok, driver_running } 
+                    | {error, scheduler_not_inited} 
+                    | {error, {invalid_or_corrupted_parameter, offerid_array}}
+                    | {error, {invalid_or_corrupted_parameter, operations_array}}
+                    | {error, {invalid_or_corrupted_parameter, filters}}
+                    | {error, driver_state()}.
+acceptOffers(OfferIDs, Operations, Filters) ->
+  nif_scheduler:acceptOffers(OfferIDs, Operations, Filters).
+
+%% -----------------------------------------------------------------------------------------
+
 -spec declineOffer( OfferId :: #'OfferID'{}) -> 
                       {ok, driver_running } 
                     | {error, scheduler_not_inited} 
@@ -130,12 +154,6 @@ stop(Failover) when is_integer(Failover),
 
 declineOffer(OfferId) when is_record(OfferId, 'OfferID') ->
     nif_scheduler:declineOffer(OfferId).
-
-acceptOffers(OfferIDs, Operations) ->
-  nif_scheduler:acceptOffers(OfferIDs, Operations).
-
-acceptOffers(OfferIDs, Operations, Filters) ->
-  nif_scheduler:acceptOffers(OfferIDs, Operations, Filters).
 
 -spec declineOffer( OfferId :: #'OfferID'{},
                     Filter :: #'Filters'{}) ->

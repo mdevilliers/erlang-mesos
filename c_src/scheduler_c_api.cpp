@@ -529,7 +529,7 @@ void CScheduler::resourceOffers(SchedulerDriver* driver,
 
       ErlNifEnv* env = enif_alloc_env();
 
-      for(int i = 0 ; i < offers.size(); i++)
+      for(unsigned int i = 0 ; i < offers.size(); i++)
       {
         Offer offer = offers.at(i);
 
