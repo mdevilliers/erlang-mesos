@@ -1,0 +1,12 @@
+*.o
+*.beam
+*.plt
+.eunit
+deps
+ebin
+priv
+erl_crash.dump
+include/mesos_pb.hrl
+include/containerizer_pb.hrl
+src/mesos_pb.erl
+src/containerizer_pb.erl
