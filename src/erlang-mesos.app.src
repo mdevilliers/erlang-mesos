@@ -5,11 +5,11 @@
   {mod, {'erlang-mesos_app', []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    inets
    ]},
   {env,[]},
   {modules, []},
-
   {contributors, []},
   {licenses, []},
   {links, []}
