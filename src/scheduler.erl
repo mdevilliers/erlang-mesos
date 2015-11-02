@@ -51,8 +51,6 @@ handle_call({subscribe, Message}, _From, State) when is_record(Message, 'mesos.v
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
- % {http, {RequestId, stream_start, Headers}}, 
- % {http, {RequestId, stream, BinBodyPart}}, and {http, {RequestId, stream_end, Headers}}
 handle_info({http, {_, stream_start, Headers}},State) ->
 	io:format("stream_start ~p~n", [Headers]), 
 	{noreply, State};
@@ -60,8 +58,12 @@ handle_info({http, {_, stream_end, Headers}},State) ->
 	io:format("stream_end ~p~n", [Headers]), 
 	{noreply, State};
 handle_info({http, {_, stream, BinBodyPart}}, State) ->
-	Response = scheduler_pb:decode_msg(BinBodyPart, 'mesos.v1.scheduler.Event'),
-  	io:format("Response from schedular ~p~n", [Response]),
+	% io:format("S : ~p~n", [parse_bits(BinBodyPart)]),
+	Events = parse_recordio(BinBodyPart),
+
+	io:format("R : ~p~n", [Events]),
+	io:format("E : ~p~n", [to_events(Events)]),
+
     {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -69,3 +71,23 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
+
+% private 
+split_on_length(<<>>, _) -> eof;
+split_on_length(Bin, Length) ->
+	<<A:Length/binary, Rest/binary>> = Bin,
+	{A,Rest}.
+
+parse_recordio(<<>>)-> [];
+parse_recordio(Bin) when is_binary(Bin) ->
+	[Len, Bin2] = binary:split(Bin, <<"\n">>), % split on 0xA
+	case split_on_length(Bin2, binary_to_integer(Len)) of
+		{Protobuf,Rest} ->
+			[Protobuf| parse_recordio(Rest)];
+		eof -> ok
+	end.
+
+to_events([]) -> [];
+to_events([H|T]) ->
+	Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
+	[Response | to_events(T)].
