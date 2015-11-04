@@ -402,7 +402,7 @@ dispatch_event('UPDATE', Event, #scheduler_state{ handler_module = Module, handl
     
     #'mesos.v1.scheduler.Event.Update'{ status = TaskStatus } = Event#'mesos.v1.scheduler.Event'.update,
     
-    {ok, HandlerState1} = Module:status( self(), TaskStatus, HandlerState),
+    {ok, HandlerState1} = Module:update( self(), TaskStatus, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('MESSAGE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
