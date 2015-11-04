@@ -5,311 +5,362 @@
 -include_lib("scheduler_pb.hrl").
 
 -export([start/2, start_link/2, teardown/1, accept/3, accept/4, decline/2, decline/3, revive/1, kill/2, kill/3, shutdown/3, acknowledge/4, reconcile/2, message/4, request/2]).
-% gen server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -record (scheduler_state, { 
-		master_url, 
-		implicit_ackowledgments, 
-		persistent_connection, 
-		framework_id = undefined,
-  		handler_module,
-    	handler_state 
-		}).
+        master_url, 
+        implicit_ackowledgments, 
+        persistent_connection, 
+        framework_id = undefined,
+        handler_module,
+        handler_state 
+        }).
 
 % callback specifications
--type scheduler_client() :: pid.
--type offer_list() :: ['mesos.v1.Offer'].
+-type scheduler_client() :: pid().
+-type offers() :: ['mesos.v1.Offer'].
+-type operations() ::  ['mesos.v1.Offer.Operation'].
+-type reconcile_tasks() ::  ['mesos.v1.scheduler.Call.Reconcile.Task'].
+-type requests() ::  ['mesos.v1.Request'].
 
--callback init( Args :: any()) -> {FrameworkInfo :: #'mesos.v1.FrameworkInfo'{}, MasterUrl :: string(), ImplicitAcknowledgements :: boolean(), Force :: boolean(), State :: any()}.
--callback subscribed(Client :: scheduler_client() , State :: any()) -> {ok, State :: any()}.
--callback offers(Client :: scheduler_client() , Offers :: offer_list() , State :: any()) -> {ok, State :: any()}.
--callback inverse_offers(Client :: scheduler_client() , Offers :: offer_list(), State :: any()) -> {ok, State :: any()}.
--callback rescind(Client :: scheduler_client() , OfferId :: #'mesos.v1.OfferID'{} , State :: any()) -> {ok, State :: any()}.
--callback update(Client :: scheduler_client() , TaskStatus :: #'mesos.v1.TaskStatus'{}, State :: any()) -> {ok, State :: any()}.
--callback message(Client :: scheduler_client() , AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{} , Data :: binary(), State :: any()) -> {ok, State :: any()}.
--callback failure(Client :: scheduler_client() ,AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Status :: number(), State :: any()) -> {ok, State :: any()}.
--callback error(Client :: scheduler_client() , Message :: list(), State :: any()) -> {ok, State :: any()}.
+-callback init( Args :: any()) 
+    -> {FrameworkInfo :: #'mesos.v1.FrameworkInfo'{}, MasterUrl :: string(), ImplicitAcknowledgements :: boolean(), Force :: boolean(), State :: any()}.
+-callback subscribed(Client :: scheduler_client(), State :: any()) 
+    -> {ok, State :: any()}.
+-callback offers(Client :: scheduler_client(), Offers :: offers(), State :: any()) 
+    -> {ok, State :: any()}.
+-callback inverse_offers(Client :: scheduler_client(), Offers :: offers(), State :: any()) 
+    -> {ok, State :: any()}.
+-callback rescind(Client :: scheduler_client(), OfferId :: #'mesos.v1.OfferID'{}, State :: any()) 
+    -> {ok, State :: any()}.
+-callback update(Client :: scheduler_client(), TaskStatus :: #'mesos.v1.TaskStatus'{}, State :: any()) 
+    -> {ok, State :: any()}.
+-callback message(Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Data :: binary(), State :: any()) 
+    -> {ok, State :: any()}.
+-callback failure(Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Status :: number(), State :: any()) 
+    -> {ok, State :: any()}.
+-callback error(Client :: scheduler_client(), Message :: list(), State :: any()) 
+    -> {ok, State :: any()}.
 
 % public api
--spec start( Module :: atom(), Args :: term()) ->
+-spec start(Module :: atom(), Args :: term()) ->
     {ok, Server :: pid()} | {error, Reason :: term()}.
+
 start(Module, Args) ->
-	% TODO : resolve this
-	application:ensure_started(inets),
+    application:ensure_started(inets),
     gen_server:start(?MODULE, {Module, Args}, []).
 
--spec start_link( Module :: atom(), Args :: term()) ->
+-spec start_link(Module :: atom(), Args :: term()) ->
     {ok, Server :: pid()} | {error, Reason :: term()}.
+
 start_link(Module, Args ) ->
-	% TODO : resolve this
-	application:ensure_started(inets),
+
+    application:ensure_started(inets),
     gen_server:start_link(?MODULE, {Module, Args}, []).
 
+-spec teardown(Scheduler :: scheduler_client()) -> ok.
+
 teardown(Scheduler) when is_pid(Scheduler) -> 
-	gen_server:cast(Scheduler, {teardown}).
+    gen_server:cast(Scheduler, {teardown}).
+
+-spec accept(Scheduler :: scheduler_client(), 
+             OfferIds :: offers(), 
+             Operations :: operations()) -> ok.
 
 accept(Scheduler, OfferIds, Operations) when is_pid(Scheduler) -> 
-	
-	Message = #'mesos.v1.scheduler.Call.Accept'{ 
-		offer_ids = OfferIds,
-		operations = Operations
-	},
-	
-	gen_server:cast(Scheduler, {accept, Message}).
+    
+    Message = #'mesos.v1.scheduler.Call.Accept'{ 
+        offer_ids = OfferIds,
+        operations = Operations
+    },
+    
+    gen_server:cast(Scheduler, {accept, Message}).
+
+-spec accept(Scheduler :: scheduler_client(), 
+             OfferIds :: offers(), 
+             Operations :: operations(), 
+             Filters :: #'mesos.v1.Filters'{}) -> ok.
 
 accept(Scheduler, OfferIds, Operations, Filters) when is_pid(Scheduler), is_record(Filters, 'mesos.v1.Filters') -> 
-	
-	Message = #'mesos.v1.scheduler.Call.Accept'{ 
-		offer_ids = OfferIds,
-		operations = Operations,
-		filters = Filters
-	},
-	
-	gen_server:cast(Scheduler, {accept, Message}).
+    
+    Message = #'mesos.v1.scheduler.Call.Accept'{ 
+        offer_ids = OfferIds,
+        operations = Operations,
+        filters = Filters
+    },
+    
+    gen_server:cast(Scheduler, {accept, Message}).
+
+-spec decline(Scheduler :: scheduler_client(), 
+             OfferIds :: offers()) -> ok.
 
 decline(Scheduler, OfferIds) when is_pid(Scheduler)-> 
-	
-	Message = #'mesos.v1.scheduler.Call.Decline'{ 
-		offer_ids = OfferIds
-	},
-	
-	gen_server:cast(Scheduler, {decline, Message}).
+    
+    Message = #'mesos.v1.scheduler.Call.Decline'{ 
+        offer_ids = OfferIds
+    },
+    
+    gen_server:cast(Scheduler, {decline, Message}).
 
-decline(Scheduler, OfferIds, Filters) when is_pid(Scheduler),is_record(Filters, 'mesos.v1.Filters') ->
-	
-	Message = #'mesos.v1.scheduler.Call.Decline'{ 
-		offer_ids = OfferIds,
-		filters = Filters
-	},
-	
- 	gen_server:cast(Scheduler, {decline, Message}).
+-spec decline(Scheduler :: scheduler_client(), 
+             OfferIds :: offers(), 
+             Filters :: #'mesos.v1.Filters'{}) -> ok.
+
+decline(Scheduler, OfferIds, Filters) when is_pid(Scheduler), is_record(Filters, 'mesos.v1.Filters') ->
+    
+    Message = #'mesos.v1.scheduler.Call.Decline'{ 
+        offer_ids = OfferIds,
+        filters = Filters
+    },
+    
+    gen_server:cast(Scheduler, {decline, Message}).
+
+-spec revive(Scheduler :: scheduler_client()) -> ok.
 
 revive(Scheduler) when is_pid(Scheduler)  -> 
-	gen_server:cast(Scheduler, {revive}).
+    gen_server:cast(Scheduler, {revive}).
+
+-spec kill (Scheduler :: scheduler_client(), 
+            TaskId :: #'mesos.v1.TaskID'{} ) -> ok.
 
 kill(Scheduler, TaskId) when is_pid(Scheduler), is_record(TaskId, 'mesos.v1.TaskID') -> 
 
-	Message = #'mesos.v1.scheduler.Call.Kill'{ 
-			task_id = TaskId
-	},
+    Message = #'mesos.v1.scheduler.Call.Kill'{ 
+            task_id = TaskId
+    },
 
-	gen_server:cast(Scheduler, {kill, Message}).
+    gen_server:cast(Scheduler, {kill, Message}).
 
-kill(Scheduler, TaskId, AgentId) when  is_pid(Scheduler),
-							           is_record(TaskId, 'mesos.v1.TaskID'),
-							           is_record(AgentId, 'mesos.v1.AgentID') -> 
+-spec kill (Scheduler :: scheduler_client(), 
+            TaskId :: #'mesos.v1.TaskID'{},
+            AgentId :: #'mesos.v1.AgentID'{} ) -> ok.
 
-	Message = #'mesos.v1.scheduler.Call.Kill'{ 
-			task_id = TaskId,
-			agent_id = AgentId
-		},
+kill(Scheduler, TaskId, AgentId) when is_pid(Scheduler), is_record(TaskId, 'mesos.v1.TaskID'), is_record(AgentId, 'mesos.v1.AgentID') -> 
 
-	gen_server:cast(Scheduler, {kill, Message}).
+    Message = #'mesos.v1.scheduler.Call.Kill'{ 
+            task_id = TaskId,
+            agent_id = AgentId
+        },
 
-shutdown(Scheduler, ExecutorId, AgentId) when is_pid(Scheduler),
-									  		is_record(ExecutorId,'mesos.v1.ExecutorID'),
-									        is_record(AgentId,'mesos.v1.AgentID') -> 
+    gen_server:cast(Scheduler, {kill, Message}).
 
-	Message = #'mesos.v1.scheduler.Call.Shutdown'{ 
-			executor_id = ExecutorId,
-			agent_id = AgentId
-		},
+-spec shutdown(Scheduler :: scheduler_client(),
+               ExecutorId :: #'mesos.v1.ExecutorID'{},
+               AgentId :: #'mesos.v1.AgentID'{}) -> ok.
 
-	gen_server:cast(Scheduler, {shutdown, Message}).
+shutdown(Scheduler, ExecutorId, AgentId) when is_pid(Scheduler), is_record(ExecutorId,'mesos.v1.ExecutorID'), is_record(AgentId,'mesos.v1.AgentID') -> 
 
-% TODO : resolve Uuid field
+    Message = #'mesos.v1.scheduler.Call.Shutdown'{ 
+            executor_id = ExecutorId,
+            agent_id = AgentId
+        },
+
+    gen_server:cast(Scheduler, {shutdown, Message}).
+
+-spec acknowledge(Scheduler :: scheduler_client(),
+               AgentId :: #'mesos.v1.AgentID'{},
+               TaskId :: #'mesos.v1.TaskID' {},
+               Uuid :: [byte()]) -> ok.
+
 acknowledge(Scheduler, AgentId, TaskId, Uuid) when is_pid(Scheduler), is_record(AgentId,'mesos.v1.AgentID'), is_record(TaskId,'mesos.v1.TaskID') -> 
 
-	Message = #'mesos.v1.scheduler.Call.Acknowledge'{ 
-		agent_id = AgentId, 
-		task_id = TaskId,
-		uuid = Uuid
-	},
-	gen_server:cast(Scheduler, {acknowledge, Message}).
+    Message = #'mesos.v1.scheduler.Call.Acknowledge'{ 
+        agent_id = AgentId, 
+        task_id = TaskId,
+        uuid = Uuid
+    },
+    gen_server:cast(Scheduler, {acknowledge, Message}).
+
+-spec reconcile(Scheduler :: scheduler_client(),
+                Tasks :: reconcile_tasks()) -> ok.
 
 reconcile(Scheduler, Tasks) when is_pid(Scheduler) -> 
 
-	Message = #'mesos.v1.scheduler.Call.Reconcile'{ 
-		tasks = Tasks
-	},
-	gen_server:cast(Scheduler, {reconcile, Message}).
+    Message = #'mesos.v1.scheduler.Call.Reconcile'{ 
+        tasks = Tasks
+    },
+    gen_server:cast(Scheduler, {reconcile, Message}).
 
+-spec message(Scheduler :: scheduler_client(),
+               AgentId :: #'mesos.v1.AgentID'{},
+               ExecutorId :: #'mesos.v1.ExecutorID'{},
+               Data :: [byte()]) -> ok.
 
-message(Scheduler, AgentId, ExecutorId, Data) when is_pid(Scheduler),
- 													  is_record(AgentId, 'mesos.v1.AgentID'),
-													  is_record(ExecutorId, 'mesos.v1.ExecutorID')-> 
-	Message = #'mesos.v1.scheduler.Call.Message'{ 
-		agent_id = AgentId,
-		executor_id = ExecutorId,
-		data = Data
-	},
+message(Scheduler, AgentId, ExecutorId, Data) when is_pid(Scheduler), is_record(AgentId, 'mesos.v1.AgentID'), is_record(ExecutorId, 'mesos.v1.ExecutorID')-> 
+    Message = #'mesos.v1.scheduler.Call.Message'{ 
+        agent_id = AgentId,
+        executor_id = ExecutorId,
+        data = Data
+    },
 
-	gen_server:cast(Scheduler, {message, Message}).
+    gen_server:cast(Scheduler, {message, Message}).
+
+-spec request(Scheduler :: scheduler_client(),
+               Requests :: requests()) -> ok.
 
 request(Scheduler, Requests) when is_pid(Scheduler) -> 
-	
-	Message = #'mesos.v1.scheduler.Call.Request'{ 
-		requests = Requests
-	},
+    
+    Message = #'mesos.v1.scheduler.Call.Request'{ 
+        requests = Requests
+    },
 
-	gen_server:cast(Scheduler, {request, Message}).
+    gen_server:cast(Scheduler, {request, Message}).
 
 % gen server callbacks
 init({Module, Args}) ->
-	
-	case Module:init(Args) of 
-		{ FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State } when is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
-																				is_list(MasterUrl),
-																				is_boolean(ImplicitAcknowledgements),
-																				is_boolean(Force) ->
+    
+    case Module:init(Args) of 
+        { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State } when is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
+                                                                                is_list(MasterUrl),
+                                                                                is_boolean(ImplicitAcknowledgements),
+                                                                                is_boolean(Force) ->
 
-			{ok, Request} = subscribe(MasterUrl, FrameworkInfo, Force),																
-			{ok, #scheduler_state{
-			 					master_url = MasterUrl, 
-								implicit_ackowledgments = ImplicitAcknowledgements,
-								persistent_connection = Request,
+            {ok, Request} = subscribe(MasterUrl, FrameworkInfo, Force),                                                             
+            {ok, #scheduler_state{
+                                master_url = MasterUrl, 
+                                implicit_ackowledgments = ImplicitAcknowledgements,
+                                persistent_connection = Request,
                                 handler_module = Module,
                                 handler_state = State
             }};
- 		Else ->  
+        Else ->  
                 Error = {bad_return_value, Else},   
                 {stop, Error}                                           
     end.
 
 handle_call(_, _, State) ->
- 	{reply, ok, State}.
+    {reply, ok, State}.
 
 handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		type = 'TEARDOWN'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        type = 'TEARDOWN'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({accept, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Accept') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Accept') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		accept = Message,
-		type = 'ACCEPT'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        accept = Message,
+        type = 'ACCEPT'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({decline, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Decline') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Decline') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		decline = Message,
-		type = 'DECLINE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        decline = Message,
+        type = 'DECLINE'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({revive}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		type = 'REVIVE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        type = 'REVIVE'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({kill, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Kill') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Kill') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		kill = Message,
-		type = 'KILL'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        kill = Message,
+        type = 'KILL'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({shutdown, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Shutdown') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Shutdown') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		shutdown = Message,
-		type = 'SHUTDOWN'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        shutdown = Message,
+        type = 'SHUTDOWN'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({acknowledge, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Acknowledge') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Acknowledge') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		acknowledge = Message,
-		type = 'ACKNOWLEDGE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        acknowledge = Message,
+        type = 'ACKNOWLEDGE'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({reconcile, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Reconcile') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Reconcile') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		reconcile = Message,
-		type = 'RECONCILE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        reconcile = Message,
+        type = 'RECONCILE'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({message, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Message') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Message') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		message = Message,
-		type = 'MESSAGE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        message = Message,
+        type = 'MESSAGE'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State};
+    ok = post(MasterUrl,Call),
+    {noreply, State};
 
 handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-	when is_record(Message, 'mesos.v1.scheduler.Call.Request') ->
+    when is_record(Message, 'mesos.v1.scheduler.Call.Request') ->
 
-	Call = #'mesos.v1.scheduler.Call'{
-		framework_id = FrameworkId,
-		message = Message,
-		type = 'REQUEST'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        framework_id = FrameworkId,
+        message = Message,
+        type = 'REQUEST'
+    },
 
-	ok = post(MasterUrl,Call),
-	{noreply, State}.
+    ok = post(MasterUrl,Call),
+    {noreply, State}.
 
 handle_info({http, {_, stream_start, _Headers}},State) ->
-	% io:format("stream_start ~p~n", [Headers]), 
-	{noreply, State};
+    % io:format("stream_start ~p~n", [Headers]), 
+    {noreply, State};
 handle_info({http, {_, stream_end, _Headers}},State) ->
-	% io:format("stream_end ~p~n", [Headers]), 
-	{noreply, State};
+    % io:format("stream_end ~p~n", [Headers]), 
+    {noreply, State};
 handle_info({http, {_, stream, BinBodyPart}}, State) ->
-	BinaryBits = parse_recordio(BinBodyPart),
-	Events = to_events(BinaryBits),
-	State1 = lists:foldl(fun(Event, State1) -> State2 = dispatch_event(Event, State1), State2 end, State, Events),
+    BinaryBits = parse_recordio(BinBodyPart),
+    Events = to_events(BinaryBits),
+    State1 = lists:foldl(fun(Event, State1) -> State2 = dispatch_event(Event, State1), State2 end, State, Events),
     {noreply, State1}.
 
 terminate(_Reason, _State) ->
@@ -323,107 +374,104 @@ dispatch_event(Event, State) -> dispatch_event(Event#'mesos.v1.scheduler.Event'.
 
 dispatch_event('SUBSCRIBED', Event, #scheduler_state{ framework_id = undefined, handler_module = Module, handler_state = HandlerState } = State) ->
 
-	% io:format("SUBSCRIBED : ~p~n", [Event#'mesos.v1.scheduler.Event'.subscribed]),
-	#'mesos.v1.scheduler.Event.Subscribed'{ framework_id = FrameworkId } = Event#'mesos.v1.scheduler.Event'.subscribed,
-	
-	{ok, HandlerState1} = Module:subscribed( self(), HandlerState),
-	State#scheduler_state{framework_id = FrameworkId, handler_state = HandlerState1};
+    #'mesos.v1.scheduler.Event.Subscribed'{ framework_id = FrameworkId } = Event#'mesos.v1.scheduler.Event'.subscribed,
+    
+    {ok, HandlerState1} = Module:subscribed( self(), HandlerState),
+    State#scheduler_state{framework_id = FrameworkId, handler_state = HandlerState1};
 
 dispatch_event('OFFERS', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	
-	% io:format("OFFERS : ~p~n", [Event#'mesos.v1.scheduler.Event'.offers]), State,
-	#'mesos.v1.scheduler.Event.Offers'{ offers = Offers} = Event#'mesos.v1.scheduler.Event'.offers,
-	% TODO : look into why reverse offers are not in the protobuffer file
-	{ok, HandlerState1} = Module:offers( self(), Offers, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    
+    #'mesos.v1.scheduler.Event.Offers'{ offers = Offers} = Event#'mesos.v1.scheduler.Event'.offers,
+    % TODO : look into why reverse offers are not in the protobuffer file
+    {ok, HandlerState1} = Module:offers( self(), Offers, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('RESCIND', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	% io:format("RESCIND : ~p~n", [Event#'mesos.v1.scheduler.Event'.rescind]), 
-	#'mesos.v1.scheduler.Event.Rescind'{ offer_id = OfferId } = Event#'mesos.v1.scheduler.Event'.rescind,
-	
-	{ok, HandlerState1} = Module:rescind( self(), OfferId, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    
+    #'mesos.v1.scheduler.Event.Rescind'{ offer_id = OfferId } = Event#'mesos.v1.scheduler.Event'.rescind,
+    
+    {ok, HandlerState1} = Module:rescind( self(), OfferId, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('UPDATE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	% io:format("UPDATE : ~p~n", [Event#'mesos.v1.scheduler.Event'.update]), State;
-	#'mesos.v1.scheduler.Event.Update'{ status = TaskStatus } = Event#'mesos.v1.scheduler.Event'.update,
-	
-	{ok, HandlerState1} = Module:status( self(), TaskStatus, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    
+    #'mesos.v1.scheduler.Event.Update'{ status = TaskStatus } = Event#'mesos.v1.scheduler.Event'.update,
+    
+    {ok, HandlerState1} = Module:status( self(), TaskStatus, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('MESSAGE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	% io:format("MESSAGE : ~p~n", [Event#'mesos.v1.scheduler.Event'.message]), State,
-	#'mesos.v1.scheduler.Event.Message'{ agent_id = AgentId, executor_id = ExecutorId, data = Data } = Event#'mesos.v1.scheduler.Event'.update,
-	
-	{ok, HandlerState1} = Module:message( self(), AgentId, ExecutorId, Data, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    
+    #'mesos.v1.scheduler.Event.Message'{ agent_id = AgentId, executor_id = ExecutorId, data = Data } = Event#'mesos.v1.scheduler.Event'.update,
+    
+    {ok, HandlerState1} = Module:message( self(), AgentId, ExecutorId, Data, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 dispatch_event('FAILURE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	% io:format("FAILURE : ~p~n", [Event#'mesos.v1.scheduler.Event'.failure]), 
-	#'mesos.v1.scheduler.Event.Failure'{ agent_id = AgentId, executor_id = ExecutorId, status = Status} = Event#'mesos.v1.scheduler.Event'.failure,
-	
-	{ok, HandlerState1} = Module:failure( self(), AgentId, ExecutorId, Status, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    
+    #'mesos.v1.scheduler.Event.Failure'{ agent_id = AgentId, executor_id = ExecutorId, status = Status} = Event#'mesos.v1.scheduler.Event'.failure,
+    
+    {ok, HandlerState1} = Module:failure( self(), AgentId, ExecutorId, Status, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('ERROR', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-	% io:format("ERROR : ~p~n", [Event#'mesos.v1.scheduler.Event'.error]),
+    
+    #'mesos.v1.scheduler.Event.Error'{ message = Message} = Event#'mesos.v1.scheduler.Event'.error,
 
-	#'mesos.v1.scheduler.Event.Error'{ message = Message} = Event#'mesos.v1.scheduler.Event'.error,
-
-	{ok, HandlerState1} = Module:error( self(), Message, HandlerState),
-	State#scheduler_state{handler_state = HandlerState1};
+    {ok, HandlerState1} = Module:error( self(), Message, HandlerState),
+    State#scheduler_state{handler_state = HandlerState1};
 
 % TODO : implement reconnect logic with backoff based on this
 dispatch_event('HEARTBEAT', Event, State) ->
-	io:format("HEARTBEAT : ~p~n", [Event]), State.
+    io:format("HEARTBEAT : ~p~n", [Event]), State.
 
 % private 
 split_on_length(<<>>, _) -> eof;
 split_on_length(Bin, Length) ->
-	<<A:Length/binary, Rest/binary>> = Bin,
-	{A,Rest}.
+    <<A:Length/binary, Rest/binary>> = Bin,
+    {A,Rest}.
 
 parse_recordio(<<>>)-> [];
 parse_recordio(Bin) when is_binary(Bin) ->
-	[Len, Bin2] = binary:split(Bin, <<"\n">>), % split on 0xA
-	case split_on_length(Bin2, binary_to_integer(Len)) of
-		{Protobuf,Rest} ->
-			[Protobuf| parse_recordio(Rest)];
-		eof -> ok
-	end.
+    [Len, Bin2] = binary:split(Bin, <<"\n">>), % split on 0xA
+    case split_on_length(Bin2, binary_to_integer(Len)) of
+        {Protobuf,Rest} ->
+            [Protobuf| parse_recordio(Rest)];
+        eof -> ok
+    end.
 
 to_events([]) -> [];
 to_events([H|T]) ->
-	Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
-	[Response | to_events(T)].
+    Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
+    [Response | to_events(T)].
 
 post(MasterUrl, Message) ->
-	Method = post,
-	URL = MasterUrl ++ "/api/v1/scheduler",
-	Header = [{"Accept", "application/x-protobuf"}],
-	Type = "application/x-protobuf",
-	Body = scheduler_pb:encode_msg(Message),
-	HTTPOptions = [],
-	Options = [],
-	{ok, _}= httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
-	ok.
+    Method = post,
+    URL = MasterUrl ++ "/api/v1/scheduler",
+    Header = [{"Accept", "application/x-protobuf"}],
+    Type = "application/x-protobuf",
+    Body = scheduler_pb:encode_msg(Message),
+    HTTPOptions = [],
+    Options = [],
+    {ok, _}= httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
+    ok.
 
 subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), is_boolean(Force) ->
-	
-	Message = #'mesos.v1.scheduler.Call.Subscribe'{ 
-		framework_info = FrameworkInfo, force = Force
-	},
+    
+    Message = #'mesos.v1.scheduler.Call.Subscribe'{ 
+        framework_info = FrameworkInfo, force = Force
+    },
 
-	Call = #'mesos.v1.scheduler.Call'{
-		subscribe = Message,
-		type = 'SUBSCRIBE'
-	},
+    Call = #'mesos.v1.scheduler.Call'{
+        subscribe = Message,
+        type = 'SUBSCRIBE'
+    },
 
-	Method = post,
-	URL = MasterUrl ++ "/api/v1/scheduler",
-	Header = [{"Accept", "application/x-protobuf"}],
-	Type = "application/x-protobuf",
-	Body = scheduler_pb:encode_msg(Call),
-	HTTPOptions = [],
-	Options = [{sync, false}, {stream, self}],
-	% TODO : handle redirects and disconnections
-	httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options).
+    Method = post,
+    URL = MasterUrl ++ "/api/v1/scheduler",
+    Header = [{"Accept", "application/x-protobuf"}],
+    Type = "application/x-protobuf",
+    Body = scheduler_pb:encode_msg(Call),
+    HTTPOptions = [],
+    Options = [{sync, false}, {stream, self}],
+    % TODO : handle redirects and disconnections
+    httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options).

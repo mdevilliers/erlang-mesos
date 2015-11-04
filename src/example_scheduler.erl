@@ -8,24 +8,24 @@
 -record (framework_state, { tasks_started = 0 }).
 
 init(_) ->
-	FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user="mdevilliers", name="Erlang Test Framework"},
-	MasterUrl = "http://localhost:5050",
+    FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user="mdevilliers", name="Erlang Test Framework"},
+    MasterUrl = "http://localhost:5050",
     ImplicitAcknowledgements = true,
     Force = true,
     State = #framework_state{},
-   	{ FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State }.
+    { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State }.
 
 subscribed(Client, State) -> 
-	io:format("subscribed! : ~p, ~p ~n", [Client, State]),
-	{ok, State}.
+    io:format("subscribed! : ~p, ~p ~n", [Client, State]),
+    {ok, State}.
 
 inverse_offers(_Client, _Offers,State) -> {ok, State}.
 
 offers(Client, Offers, State) -> 
- 	io:format("offers! : ~p, ~p, ~p ~n", [Client, Offers, State]),
- 	OfferIds = lists:foldr(fun (#'mesos.v1.Offer'{id = OfferId}, Acc) ->  [OfferId | Acc ] end, [], Offers),
-	scheduler:decline(Client, OfferIds),
-	{ok, State}.
+    io:format("offers! : ~p, ~p, ~p ~n", [Client, Offers, State]),
+    OfferIds = lists:foldr(fun (#'mesos.v1.Offer'{id = OfferId}, Acc) ->  [OfferId | Acc ] end, [], Offers),
+    scheduler:decline(Client, OfferIds),
+    {ok, State}.
 
 rescind(_Client, _OfferId, State) -> {ok, State}.
 
