@@ -358,7 +358,7 @@ handle_info({http, {_, stream_end, _Headers}},State) ->
     % io:format("stream_end ~p~n", [Headers]), 
     {noreply, State};
 handle_info({http, {_, stream, BinBodyPart}}, State) ->
-    BinaryBits = parse_recordio(BinBodyPart),
+    BinaryBits = recordio:parse(BinBodyPart),
     Events = to_events(BinaryBits),
     State1 = lists:foldl(fun(Event, State1) -> State2 = dispatch_event(Event, State1), State2 end, State, Events),
     {noreply, State1}.
@@ -425,20 +425,6 @@ dispatch_event('HEARTBEAT', Event, State) ->
     io:format("HEARTBEAT : ~p~n", [Event]), State.
 
 % private 
-split_on_length(<<>>, _) -> eof;
-split_on_length(Bin, Length) ->
-    <<A:Length/binary, Rest/binary>> = Bin,
-    {A,Rest}.
-
-parse_recordio(<<>>)-> [];
-parse_recordio(Bin) when is_binary(Bin) ->
-    [Len, Bin2] = binary:split(Bin, <<"\n">>), % split on 0xA
-    case split_on_length(Bin2, binary_to_integer(Len)) of
-        {Protobuf,Rest} ->
-            [Protobuf| parse_recordio(Rest)];
-        eof -> ok
-    end.
-
 to_events([]) -> [];
 to_events([H|T]) ->
     Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
