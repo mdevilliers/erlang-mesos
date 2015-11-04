@@ -234,7 +234,7 @@ init({Module, Args}) ->
 handle_call(_, _, State) ->
     {reply, ok, State}.
 
-handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) ->
+handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, persistent_connection = PersistantConnection } = State) ->
 
     Call = #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
@@ -242,6 +242,8 @@ handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = 
     },
 
     ok = post(MasterUrl,Call),
+    ok = httpc:cancel_request(PersistantConnection),
+
     {noreply, State};
 
 handle_cast({accept, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
