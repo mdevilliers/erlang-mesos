@@ -16,6 +16,9 @@
         handler_state 
         }).
 
+-define (SCHEDULER_API_URI, "/api/v1/scheduler").
+-define (SCHEDULER_API_TRANSPORT, "application/x-protobuf").
+
 % callback specifications
 -type scheduler_client() :: pid().
 -type offers() :: ['mesos.v1.Offer'].
@@ -25,21 +28,21 @@
 
 -callback init( Args :: any()) 
     -> {FrameworkInfo :: #'mesos.v1.FrameworkInfo'{}, MasterUrl :: string(), ImplicitAcknowledgements :: boolean(), Force :: boolean(), State :: any()}.
--callback subscribed(Client :: scheduler_client(), State :: any()) 
+-callback subscribed( Client :: scheduler_client(), State :: any()) 
     -> {ok, State :: any()}.
--callback offers(Client :: scheduler_client(), Offers :: offers(), State :: any()) 
+-callback offers( Client :: scheduler_client(), Offers :: offers(), State :: any()) 
     -> {ok, State :: any()}.
 -callback inverse_offers(Client :: scheduler_client(), Offers :: offers(), State :: any()) 
     -> {ok, State :: any()}.
--callback rescind(Client :: scheduler_client(), OfferId :: #'mesos.v1.OfferID'{}, State :: any()) 
+-callback rescind( Client :: scheduler_client(), OfferId :: #'mesos.v1.OfferID'{}, State :: any()) 
     -> {ok, State :: any()}.
--callback update(Client :: scheduler_client(), TaskStatus :: #'mesos.v1.TaskStatus'{}, State :: any()) 
+-callback update( Client :: scheduler_client(), TaskStatus :: #'mesos.v1.TaskStatus'{}, State :: any()) 
     -> {ok, State :: any()}.
--callback message(Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Data :: binary(), State :: any()) 
+-callback message( Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Data :: binary(), State :: any()) 
     -> {ok, State :: any()}.
--callback failure(Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Status :: number(), State :: any()) 
+-callback failure( Client :: scheduler_client(), AgentId :: #'mesos.v1.AgentID'{}, ExecutorId :: #'mesos.v1.ExecutorID'{}, Status :: number(), State :: any()) 
     -> {ok, State :: any()}.
--callback error(Client :: scheduler_client(), Message :: list(), State :: any()) 
+-callback error( Client :: scheduler_client(), Message :: list(), State :: any()) 
     -> {ok, State :: any()}.
 
 % public api
@@ -432,9 +435,9 @@ to_events([H|T]) ->
 
 post(MasterUrl, Message) ->
     Method = post,
-    URL = MasterUrl ++ "/api/v1/scheduler",
-    Header = [{"Accept", "application/x-protobuf"}],
-    Type = "application/x-protobuf",
+    URL = MasterUrl ++ ?SCHEDULER_API_URI,
+    Header = [{"Accept", ?SCHEDULER_API_TRANSPORT}],
+    Type = ?SCHEDULER_API_TRANSPORT,
     Body = scheduler_pb:encode_msg(Message),
     HTTPOptions = [],
     Options = [],
@@ -453,9 +456,9 @@ subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), is_record(Fr
     },
 
     Method = post,
-    URL = MasterUrl ++ "/api/v1/scheduler",
-    Header = [{"Accept", "application/x-protobuf"}],
-    Type = "application/x-protobuf",
+    URL = MasterUrl ++ ?SCHEDULER_API_URI,
+    Header = [{"Accept", ?SCHEDULER_API_TRANSPORT}],
+    Type = ?SCHEDULER_API_TRANSPORT,
     Body = scheduler_pb:encode_msg(Call),
     HTTPOptions = [],
     Options = [{sync, false}, {stream, self}],
