@@ -9,7 +9,7 @@
 
 -record (scheduler_state, { 
         master_url, 
-        implicit_ackowledgments, 
+        implicit_ackowledgments = false, 
         persistent_connection, 
         framework_id = undefined,
         handler_module,
@@ -387,7 +387,7 @@ dispatch_event('SUBSCRIBED', Event, #scheduler_state{ framework_id = undefined, 
 dispatch_event('OFFERS', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
     
     #'mesos.v1.scheduler.Event.Offers'{ offers = Offers} = Event#'mesos.v1.scheduler.Event'.offers,
-    % TODO : look into why reverse offers are not in the protobuffer file
+    % TODO : reverse offers are in 0.26
     {ok, HandlerState1} = Module:offers( self(), Offers, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
@@ -398,10 +398,12 @@ dispatch_event('RESCIND', Event, #scheduler_state{ handler_module = Module, hand
     {ok, HandlerState1} = Module:rescind( self(), OfferId, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
-dispatch_event('UPDATE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
+dispatch_event('UPDATE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState, implicit_ackowledgments = ImplicitAcknowledgements } = State) ->
     
     #'mesos.v1.scheduler.Event.Update'{ status = TaskStatus } = Event#'mesos.v1.scheduler.Event'.update,
     
+    acknowledgeStatusUpdate(ImplicitAcknowledgements, TaskStatus),
+
     {ok, HandlerState1} = Module:update( self(), TaskStatus, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
@@ -435,6 +437,11 @@ to_events([H|T]) ->
     Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
     [Response | to_events(T)].
 
+acknowledgeStatusUpdate(false, _) -> ok;
+acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{ uuid = <<>>}) -> ok ;
+acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{task_id = TaskId, agent_id = AgentId, uuid = Uuid}) ->
+    scheduler:acknowledge(self(), AgentId, TaskId, Uuid).
+
 post(MasterUrl, Message) ->
     Method = post,
     URL = MasterUrl ++ ?SCHEDULER_API_URI,
@@ -466,3 +473,4 @@ subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), is_record(Fr
     Options = [{sync, false}, {stream, self}],
     % TODO : handle redirects and disconnections
     httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options).
+
