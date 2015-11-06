@@ -13,7 +13,7 @@
 % Starts up, listens for resource offers, starts one task, listens for updates
 % When the task stops listens for more resource offers....
 %
-% scheduler:start_link( example_framework, []).
+% scheduler:start_link( example_scheduler, []).
 
 init(_) ->
     FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user="vagrant", name="Erlang Test Framework"},
@@ -43,24 +43,33 @@ offers(Client, [ #'mesos.v1.Offer'{ id = OfferId, agent_id = AgentId } | _] = Of
 
     Command = "env && sleep 10 && echo 'byebye'",
 
+    Cpu = #'mesos.v1.Resource'{
+            name="cpus", 
+            type='SCALAR', 
+            scalar=#'mesos.v1.Value.Scalar'{ 
+                    value = 0.1 }
+                },
+    Memory = #'mesos.v1.Resource'{
+            name="mem", 
+            type='SCALAR', 
+            scalar=#'mesos.v1.Value.Scalar'{ 
+                    value = 32 }
+                },
+
+
     TaskInfo = #'mesos.v1.TaskInfo'{
-        name = "erlang_task:" ++ Id,
+        name = "erlang_task_" ++ Id,
         task_id = #'mesos.v1.TaskID'{ value = "task_id_" ++ Id},
         agent_id = AgentId,
-        resources = [ 
-            #'mesos.v1.Resource'{
-                name="cpus", 
-                type='SCALAR', 
-                scalar=#'mesos.v1.Value.Scalar'{ 
-                        value = 0.1 }
-                    }],
+        resources = [ Cpu],
         executor = #'mesos.v1.ExecutorInfo'{ 
                     executor_id= #'mesos.v1.ExecutorID'{ 
                         value = "executor_id_" ++ Id
                         },
                     command = #'mesos.v1.CommandInfo'{
                         value = Command
-                        }
+                        },
+                     resources = [ Cpu, Memory]
                     }
     },
    
