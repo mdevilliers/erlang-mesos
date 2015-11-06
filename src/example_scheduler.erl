@@ -16,12 +16,14 @@
 % scheduler:start_link( example_scheduler, []).
 
 init(_) ->
-    FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user="vagrant", name="Erlang Test Framework"},
-    MasterUrl = "http://localhost:5050",
-    ImplicitAcknowledgements = true,
-    Force = true,
-    State = #framework_state{},
-    { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State }.
+
+    CurrentUser = os:getenv("USER"),
+
+    FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user=CurrentUser, name="Erlang Test Framework"},
+
+    MasterUrl = "http://localhost:5050", ImplicitAcknowledgements = true, Force = true,
+
+    { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, #framework_state{} }.
 
 subscribed(_Client, State) -> 
     io:format("subscribed callback : ~p~n", [State]),
