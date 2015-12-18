@@ -5,7 +5,7 @@
 
 % these tests connect to a running instance of mesos
 % change the location used here...
--define (MASTER_LOCATION, "127.0.1.1:5050").
+-define (MASTER_LOCATION, "zk://localhost:2181/mesos").
 
 init_and_clean_exit_init_scheduler_test()->
 
