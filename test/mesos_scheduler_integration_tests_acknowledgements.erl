@@ -6,7 +6,7 @@
 
 % these tests connect to a running instance of mesos
 % change the location used here...
--define (MASTER_LOCATION, "127.0.0.1:5050").
+-define (MASTER_LOCATION, "127.0.1.1:5050").
 
 explicit_acknowledgement_test() ->
 
