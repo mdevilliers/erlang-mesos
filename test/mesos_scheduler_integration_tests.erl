@@ -66,7 +66,7 @@ crash_in_scheduler_closes_nif_connections_gracefully_test()->
     {ok,_} = scheduler:start(test_framework, ?MASTER_LOCATION),
  
     io:format(user, "waiting for crash~n", []),
-    timer:sleep(500), % wait for crash
+    timer:sleep(2000), % wait for crash
     io:format(user, "starting up again~n", []),
     meck:unload(test_framework),
 
