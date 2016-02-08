@@ -245,7 +245,7 @@ handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = 
 
     ok = post(MasterUrl,Call),
     ok = httpc:cancel_request(PersistantConnection),
-
+    
     {noreply, State};
 
 handle_cast({accept, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
@@ -358,6 +358,11 @@ handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framewo
     ok = post(MasterUrl,Call),
     {noreply, State}.
 
+
+handle_info({http,{_,{error,shutdown}}}, State) ->
+    % connection is severed
+    io:format(user, "HTTP : {error, shutdown}~n", []),
+    {noreply, State};
 handle_info({http, {_, stream_start, _Headers}},State) ->
     % io:format("stream_start ~p~n", [Headers]), 
     {noreply, State};
