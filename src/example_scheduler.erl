@@ -29,7 +29,9 @@ subscribed(_Client, State) ->
     io:format("subscribed callback : ~p~n", [State]),
     {ok, State}.
 
-inverse_offers(_Client, _Offers,State) -> {ok, State}.
+inverse_offers(_Client, _Offers,State) -> 
+    io:format("inverse offers callback : ~p~n", [State]),
+    {ok, State}.
 
 offers(Client, Offers, #framework_state{ tasks_started = 1} = State) ->
     io:format("Reached max tasks [1] so declining offer.~n", []),

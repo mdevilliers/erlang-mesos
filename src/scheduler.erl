@@ -4,8 +4,11 @@
 
 -include_lib("scheduler_pb.hrl").
 
--export([start/2, start_link/2, teardown/1, accept/3, accept/4, decline/2, decline/3, revive/1, kill/2, kill/3, shutdown/3, acknowledge/4, reconcile/2, message/4, request/2]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start/2, start_link/2, teardown/1, accept/3, accept/4, 
+         decline/2, decline/3, revive/1, kill/2, kill/3, shutdown/3, 
+         acknowledge/4, reconcile/2, message/4, request/2]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, 
+         code_change/3]).
 
 -record (scheduler_state, { 
         master_url, 
@@ -57,7 +60,6 @@ start(Module, Args) ->
     {ok, Server :: pid()} | {error, Reason :: term()}.
 
 start_link(Module, Args ) ->
-
     application:ensure_started(inets),
     gen_server:start_link(?MODULE, {Module, Args}, []).
 
@@ -381,21 +383,21 @@ dispatch_event('SUBSCRIBED', Event, #scheduler_state{ framework_id = undefined, 
 
     #'mesos.v1.scheduler.Event.Subscribed'{ framework_id = FrameworkId } = Event#'mesos.v1.scheduler.Event'.subscribed,
     
-    {ok, HandlerState1} = Module:subscribed( self(), HandlerState),
+    {ok, HandlerState1} = Module:subscribed(self(), HandlerState),
     State#scheduler_state{framework_id = FrameworkId, handler_state = HandlerState1};
 
 dispatch_event('OFFERS', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
     
-    #'mesos.v1.scheduler.Event.Offers'{ offers = Offers} = Event#'mesos.v1.scheduler.Event'.offers,
-    % TODO : reverse offers are in 0.26
-    {ok, HandlerState1} = Module:offers( self(), Offers, HandlerState),
+    #'mesos.v1.scheduler.Event.Offers'{ offers = Offers, inverse_offers = InverseOffers} = Event#'mesos.v1.scheduler.Event'.offers,
+
+    {ok, HandlerState1} = offer_dispatch(Module, Offers, InverseOffers, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('RESCIND', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState } = State) ->
     
     #'mesos.v1.scheduler.Event.Rescind'{ offer_id = OfferId } = Event#'mesos.v1.scheduler.Event'.rescind,
     
-    {ok, HandlerState1} = Module:rescind( self(), OfferId, HandlerState),
+    {ok, HandlerState1} = Module:rescind(self(), OfferId, HandlerState),
     State#scheduler_state{handler_state = HandlerState1};
 
 dispatch_event('UPDATE', Event, #scheduler_state{ handler_module = Module, handler_state = HandlerState, implicit_ackowledgments = ImplicitAcknowledgements } = State) ->
@@ -442,6 +444,18 @@ acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{ uuid = <<>>}) -> ok ;
 acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{task_id = TaskId, agent_id = AgentId, uuid = Uuid}) ->
     scheduler:acknowledge(self(), AgentId, TaskId, Uuid).
 
+% only send out offers or invers offers if they exist
+% chain one after the other if they are received together
+offer_dispatch(_, [], [], State) -> {ok, State};
+offer_dispatch(Module, Offers, [], State) -> 
+    Module:offers(self(), Offers, State);
+offer_dispatch(Module, [], InverseOffers, State) -> 
+    Module:inverse_offers(self(), InverseOffers, State);
+offer_dispatch(Module, Offers, InverseOffers, State) -> 
+    {ok, State1} = Module:offers(self(), Offers, State),
+    {ok, State2} = Module:inverse_offers(self(), InverseOffers, State1),
+    {ok, State2}.
+
 post(MasterUrl, Message) ->
     Method = post,
     URL = MasterUrl ++ ?SCHEDULER_API_URI,
@@ -453,7 +467,9 @@ post(MasterUrl, Message) ->
     {ok, _}= httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
     ok.
 
-subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), is_boolean(Force) ->
+subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), 
+                                                is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
+                                                is_boolean(Force) ->
     
     Message = #'mesos.v1.scheduler.Call.Subscribe'{ 
         framework_info = FrameworkInfo, force = Force
@@ -473,4 +489,3 @@ subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), is_record(Fr
     Options = [{sync, false}, {stream, self}],
     % TODO : handle redirects and disconnections
     httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options).
-
