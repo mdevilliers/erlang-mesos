@@ -7,6 +7,7 @@
 -export([start/2, start_link/2, teardown/1, accept/3, accept/4, 
          decline/2, decline/3, revive/1, kill/2, kill/3, shutdown/3, 
          acknowledge/4, reconcile/2, message/4, request/2]).
+
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, 
          code_change/3]).
 
@@ -76,51 +77,45 @@ teardown(Scheduler) when is_pid(Scheduler) ->
 
 accept(Scheduler, OfferIds, Operations) when is_pid(Scheduler) -> 
     
-    Message = #'mesos.v1.scheduler.Call.Accept'{ 
+    gen_server:cast(Scheduler, {accept, #'mesos.v1.scheduler.Call.Accept'{ 
         offer_ids = OfferIds,
         operations = Operations
-    },
-    
-    gen_server:cast(Scheduler, {accept, Message}).
+    }}).
 
 -spec accept(Scheduler :: scheduler_client(), 
              OfferIds :: offers(), 
              Operations :: operations(), 
              Filters :: #'mesos.v1.Filters'{}) -> ok.
 
-accept(Scheduler, OfferIds, Operations, Filters) when is_pid(Scheduler), is_record(Filters, 'mesos.v1.Filters') -> 
+accept(Scheduler, OfferIds, Operations, Filters) when is_pid(Scheduler), 
+                                                      is_record(Filters, 'mesos.v1.Filters') -> 
     
-    Message = #'mesos.v1.scheduler.Call.Accept'{ 
+    gen_server:cast(Scheduler, { accept, #'mesos.v1.scheduler.Call.Accept'{ 
         offer_ids = OfferIds,
         operations = Operations,
         filters = Filters
-    },
-    
-    gen_server:cast(Scheduler, {accept, Message}).
+    }}).
 
 -spec decline(Scheduler :: scheduler_client(), 
              OfferIds :: offers()) -> ok.
 
 decline(Scheduler, OfferIds) when is_pid(Scheduler)-> 
-    
-    Message = #'mesos.v1.scheduler.Call.Decline'{ 
+
+    gen_server:cast(Scheduler, { decline, #'mesos.v1.scheduler.Call.Decline'{ 
         offer_ids = OfferIds
-    },
-    
-    gen_server:cast(Scheduler, {decline, Message}).
+    }}).
 
 -spec decline(Scheduler :: scheduler_client(), 
              OfferIds :: offers(), 
              Filters :: #'mesos.v1.Filters'{}) -> ok.
 
-decline(Scheduler, OfferIds, Filters) when is_pid(Scheduler), is_record(Filters, 'mesos.v1.Filters') ->
+decline(Scheduler, OfferIds, Filters) when is_pid(Scheduler), 
+                                           is_record(Filters, 'mesos.v1.Filters') ->
     
-    Message = #'mesos.v1.scheduler.Call.Decline'{ 
+    gen_server:cast(Scheduler, {decline, #'mesos.v1.scheduler.Call.Decline'{ 
         offer_ids = OfferIds,
         filters = Filters
-    },
-    
-    gen_server:cast(Scheduler, {decline, Message}).
+    }}).
 
 -spec revive(Scheduler :: scheduler_client()) -> ok.
 
@@ -132,86 +127,83 @@ revive(Scheduler) when is_pid(Scheduler)  ->
 
 kill(Scheduler, TaskId) when is_pid(Scheduler), is_record(TaskId, 'mesos.v1.TaskID') -> 
 
-    Message = #'mesos.v1.scheduler.Call.Kill'{ 
+    gen_server:cast(Scheduler, {kill, #'mesos.v1.scheduler.Call.Kill'{ 
             task_id = TaskId
-    },
-
-    gen_server:cast(Scheduler, {kill, Message}).
+    }}).
 
 -spec kill (Scheduler :: scheduler_client(), 
             TaskId :: #'mesos.v1.TaskID'{},
             AgentId :: #'mesos.v1.AgentID'{} ) -> ok.
 
-kill(Scheduler, TaskId, AgentId) when is_pid(Scheduler), is_record(TaskId, 'mesos.v1.TaskID'), is_record(AgentId, 'mesos.v1.AgentID') -> 
+kill(Scheduler, TaskId, AgentId) when is_pid(Scheduler), 
+                                      is_record(TaskId, 'mesos.v1.TaskID'), 
+                                      is_record(AgentId, 'mesos.v1.AgentID') -> 
 
-    Message = #'mesos.v1.scheduler.Call.Kill'{ 
+    gen_server:cast(Scheduler, {kill, #'mesos.v1.scheduler.Call.Kill'{ 
             task_id = TaskId,
             agent_id = AgentId
-        },
-
-    gen_server:cast(Scheduler, {kill, Message}).
+        }}).
 
 -spec shutdown(Scheduler :: scheduler_client(),
                ExecutorId :: #'mesos.v1.ExecutorID'{},
                AgentId :: #'mesos.v1.AgentID'{}) -> ok.
 
-shutdown(Scheduler, ExecutorId, AgentId) when is_pid(Scheduler), is_record(ExecutorId,'mesos.v1.ExecutorID'), is_record(AgentId,'mesos.v1.AgentID') -> 
+shutdown(Scheduler, ExecutorId, AgentId) when is_pid(Scheduler), 
+                                              is_record(ExecutorId,'mesos.v1.ExecutorID'), 
+                                              is_record(AgentId,'mesos.v1.AgentID') -> 
 
-    Message = #'mesos.v1.scheduler.Call.Shutdown'{ 
+    gen_server:cast(Scheduler, {shutdown, #'mesos.v1.scheduler.Call.Shutdown'{ 
             executor_id = ExecutorId,
             agent_id = AgentId
-        },
-
-    gen_server:cast(Scheduler, {shutdown, Message}).
+        }}).
 
 -spec acknowledge(Scheduler :: scheduler_client(),
                AgentId :: #'mesos.v1.AgentID'{},
                TaskId :: #'mesos.v1.TaskID' {},
                Uuid :: [byte()]) -> ok.
 
-acknowledge(Scheduler, AgentId, TaskId, Uuid) when is_pid(Scheduler), is_record(AgentId,'mesos.v1.AgentID'), is_record(TaskId,'mesos.v1.TaskID') -> 
+acknowledge(Scheduler, AgentId, TaskId, Uuid) when is_pid(Scheduler), 
+                                                   is_record(AgentId,'mesos.v1.AgentID'), 
+                                                   is_record(TaskId,'mesos.v1.TaskID') -> 
 
-    Message = #'mesos.v1.scheduler.Call.Acknowledge'{ 
+    gen_server:cast(Scheduler, {acknowledge, #'mesos.v1.scheduler.Call.Acknowledge'{ 
         agent_id = AgentId, 
         task_id = TaskId,
         uuid = Uuid
-    },
-    gen_server:cast(Scheduler, {acknowledge, Message}).
+    }}).
 
 -spec reconcile(Scheduler :: scheduler_client(),
                 Tasks :: reconcile_tasks()) -> ok.
 
 reconcile(Scheduler, Tasks) when is_pid(Scheduler) -> 
 
-    Message = #'mesos.v1.scheduler.Call.Reconcile'{ 
+    gen_server:cast(Scheduler, {reconcile, #'mesos.v1.scheduler.Call.Reconcile'{ 
         tasks = Tasks
-    },
-    gen_server:cast(Scheduler, {reconcile, Message}).
+    }}).
 
 -spec message(Scheduler :: scheduler_client(),
                AgentId :: #'mesos.v1.AgentID'{},
                ExecutorId :: #'mesos.v1.ExecutorID'{},
                Data :: [byte()]) -> ok.
 
-message(Scheduler, AgentId, ExecutorId, Data) when is_pid(Scheduler), is_record(AgentId, 'mesos.v1.AgentID'), is_record(ExecutorId, 'mesos.v1.ExecutorID')-> 
-    Message = #'mesos.v1.scheduler.Call.Message'{ 
+message(Scheduler, AgentId, ExecutorId, Data) when is_pid(Scheduler), 
+                                                   is_record(AgentId, 'mesos.v1.AgentID'), 
+                                                   is_record(ExecutorId, 'mesos.v1.ExecutorID')-> 
+
+    gen_server:cast(Scheduler, {message, #'mesos.v1.scheduler.Call.Message'{ 
         agent_id = AgentId,
         executor_id = ExecutorId,
         data = Data
-    },
-
-    gen_server:cast(Scheduler, {message, Message}).
+    }}).
 
 -spec request(Scheduler :: scheduler_client(),
                Requests :: requests()) -> ok.
 
 request(Scheduler, Requests) when is_pid(Scheduler) -> 
     
-    Message = #'mesos.v1.scheduler.Call.Request'{ 
+    gen_server:cast(Scheduler, {request, #'mesos.v1.scheduler.Call.Request'{ 
         requests = Requests
-    },
-
-    gen_server:cast(Scheduler, {request, Message}).
+    }}).
 
 % gen server callbacks
 init({Module, Args}) ->
