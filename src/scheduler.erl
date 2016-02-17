@@ -30,7 +30,9 @@
 -type requests() ::  ['mesos.v1.Request'].
 
 -callback init( Args :: any()) 
-    -> {FrameworkInfo :: #'mesos.v1.FrameworkInfo'{}, MasterUrl :: string(), ImplicitAcknowledgements :: boolean(), Force :: boolean(), State :: any()}.
+    -> {FrameworkInfo :: #'mesos.v1.FrameworkInfo'{}, MasterUrl :: string(), 
+        ImplicitAcknowledgements :: boolean(), Force :: boolean(), State :: any()}.
+
 -callback subscribed( Client :: scheduler_client(), State :: any()) 
     -> {ok, State :: any()}.
 -callback offers( Client :: scheduler_client(), Offers :: offers(), State :: any()) 
@@ -53,14 +55,14 @@
     {ok, Server :: pid()} | {error, Reason :: term()}.
 
 start(Module, Args) ->
-    application:ensure_started(inets),
+    hackney:start(),
     gen_server:start(?MODULE, {Module, Args}, []).
 
 -spec start_link(Module :: atom(), Args :: term()) ->
     {ok, Server :: pid()} | {error, Reason :: term()}.
 
 start_link(Module, Args ) ->
-    application:ensure_started(inets),
+    hackney:start(),
     gen_server:start_link(?MODULE, {Module, Args}, []).
 
 -spec teardown(Scheduler :: scheduler_client()) -> ok.
@@ -213,30 +215,41 @@ request(Scheduler, Requests) when is_pid(Scheduler) ->
 
 % gen server callbacks
 init({Module, Args}) ->
-    
-    case Module:init(Args) of 
-        { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State } when is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
-                                                                                is_list(MasterUrl),
-                                                                                is_boolean(ImplicitAcknowledgements),
-                                                                                is_boolean(Force) ->
-
-            {ok, Request} = subscribe(MasterUrl, FrameworkInfo, Force),                                                             
-            {ok, #scheduler_state{
-                                master_url = MasterUrl, 
-                                implicit_ackowledgments = ImplicitAcknowledgements,
-                                persistent_connection = Request,
-                                handler_module = Module,
-                                handler_state = State
-            }};
-        Else ->  
-                Error = {bad_return_value, Else},   
-                {stop, Error}                                           
-    end.
+    gen_server:cast(self(), {startup, Module, Args}),
+    {ok, #scheduler_state{}}.
 
 handle_call(_, _, State) ->
     {reply, ok, State}.
 
-handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, persistent_connection = PersistantConnection } = State) ->
+handle_cast({startup, Module, Args}, _)->
+
+    case Module:init(Args) of 
+        { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, State } 
+                when is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
+                     is_list(MasterUrl),
+                     is_boolean(ImplicitAcknowledgements),
+                     is_boolean(Force) ->
+
+            {ok, Request} = subscribe(MasterUrl, FrameworkInfo, Force),
+            State1 = #scheduler_state{
+                                master_url = MasterUrl, 
+                                implicit_ackowledgments = ImplicitAcknowledgements,
+                                persistent_connection = Request,
+                                handler_module = Module,
+                                handler_state = State},
+            {noreply, State1};
+
+        Else ->  
+                Error = {bad_return_value, Else},   
+                {stop, Error, #scheduler_state{
+                                handler_module = Module}
+                                }                                         
+    end;
+
+handle_cast({teardown}, #scheduler_state{ master_url = MasterUrl, 
+                                          framework_id = FrameworkId, 
+                                          persistent_connection = PersistantConnection 
+                                          } = State) ->
 
     Call = #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
@@ -244,11 +257,12 @@ handle_cast({teardown}, #scheduler_state{master_url = MasterUrl, framework_id = 
     },
 
     ok = post(MasterUrl,Call),
-    ok = httpc:cancel_request(PersistantConnection),
-    
+    hackney:close(PersistantConnection),
+
     {noreply, State};
 
-handle_cast({accept, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
+handle_cast({accept, Message}, #scheduler_state{ master_url = MasterUrl, 
+                                                 framework_id = FrameworkId} = State) 
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Accept') ->
 
@@ -261,7 +275,8 @@ handle_cast({accept, Message}, #scheduler_state{master_url = MasterUrl, framewor
     ok = post(MasterUrl,Call),
     {noreply, State};
 
-handle_cast({decline, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
+handle_cast({decline, Message}, #scheduler_state{ master_url = MasterUrl, 
+                                                  framework_id = FrameworkId} = State) 
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Decline') ->
 
@@ -359,21 +374,26 @@ handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framewo
     {noreply, State}.
 
 
-handle_info({http,{_,{error,shutdown}}}, State) ->
-    % connection is severed
-    io:format(user, "HTTP : {error, shutdown}~n", []),
-    {noreply, State};
-handle_info({http, {_, stream_start, _Headers}},State) ->
-    % io:format("stream_start ~p~n", [Headers]), 
-    {noreply, State};
-handle_info({http, {_, stream_end, _Headers}},State) ->
-    % io:format("stream_end ~p~n", [Headers]), 
-    {noreply, State};
-handle_info({http, {_, stream, BinBodyPart}}, State) ->
-    BinaryBits = recordio:parse(BinBodyPart),
+handle_info({hackney_response, _Ref, {status, _StatusInt, _Reason}}, State) ->
+    % io:format("got ~p status: ~p with reason ~p~n", [Ref, StatusInt, Reason]),
+    {noreply,State};
+handle_info({hackney_response, _Ref, {headers, _Headers}}, State) ->
+    % io:format(user, "hackney_response headers ~p ~p~n", [Ref, Headers]),
+    {noreply,State};
+handle_info({hackney_response, _Ref, done}, State) ->
+    % io:format(user, "hackney_response done ~p ~n", [Ref]),
+    {noreply,State};
+handle_info( {hackney_response, _Ref, Bin}, State) ->
+    % io:format(user, "hackney_response ~p ~p~n", [Ref, Bin]),
+    BinaryBits = recordio:parse(Bin),
     Events = to_events(BinaryBits),
     State1 = lists:foldl(fun(Event, State1) -> State2 = dispatch_event(Event, State1), State2 end, State, Events),
-    {noreply, State1}.
+    % io:format(user, "NEW STATE : ~p~n", [State1]),
+    {noreply, State1};
+
+handle_info(Any, State) ->
+    io:format("unknown ~p~n", [Any]),
+    {noreply, State}.
 
 terminate(_Reason, _State) ->
   ok.
@@ -385,7 +405,7 @@ code_change(_OldVsn, State, _Extra) ->
 dispatch_event(Event, State) -> dispatch_event(Event#'mesos.v1.scheduler.Event'.type, Event, State).
 
 dispatch_event('SUBSCRIBED', Event, #scheduler_state{ framework_id = undefined, handler_module = Module, handler_state = HandlerState } = State) ->
-
+    
     #'mesos.v1.scheduler.Event.Subscribed'{ framework_id = FrameworkId } = Event#'mesos.v1.scheduler.Event'.subscribed,
     
     {ok, HandlerState1} = Module:subscribed(self(), HandlerState),
@@ -446,10 +466,12 @@ to_events([H|T]) ->
 
 acknowledgeStatusUpdate(false, _) -> ok;
 acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{ uuid = <<>>}) -> ok ;
-acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{task_id = TaskId, agent_id = AgentId, uuid = Uuid}) ->
+acknowledgeStatusUpdate(true, #'mesos.v1.TaskStatus'{task_id = TaskId, 
+                                                     agent_id = AgentId,
+                                                     uuid = Uuid}) ->
     scheduler:acknowledge(self(), AgentId, TaskId, Uuid).
 
-% only send out offers or invers offers if they exist
+% only send out offers or inverse offers if they exist
 % chain one after the other if they are received together
 offer_dispatch(_, [], [], State) -> {ok, State};
 offer_dispatch(Module, Offers, [], State) -> 
@@ -462,19 +484,24 @@ offer_dispatch(Module, Offers, InverseOffers, State) ->
     {ok, State2}.
 
 post(MasterUrl, Message) ->
-    Method = post,
+
     URL = MasterUrl ++ ?SCHEDULER_API_URI,
-    Header = [{"Accept", ?SCHEDULER_API_TRANSPORT}],
-    Type = ?SCHEDULER_API_TRANSPORT,
+    Headers = [{"Accept", ?SCHEDULER_API_TRANSPORT},
+              {"Content-Type", ?SCHEDULER_API_TRANSPORT}],
+    
     Body = scheduler_pb:encode_msg(Message),
-    HTTPOptions = [],
-    Options = [],
-    {ok, _}= httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
-    ok.
+
+    case hackney:post(URL, Headers, Body) of
+        {ok, 202, _, _} -> ok ;
+        {ok, 400, _, Ref} ->
+            % TODO : resolve this 
+            io:format("400 : ~p~n", [hackney:body(Ref)]),
+            ok
+    end.
 
 subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl), 
-                                                is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
-                                                is_boolean(Force) ->
+                            is_record(FrameworkInfo, 'mesos.v1.FrameworkInfo'), 
+                            is_boolean(Force) ->
     
     Message = #'mesos.v1.scheduler.Call.Subscribe'{ 
         framework_info = FrameworkInfo, force = Force
@@ -485,12 +512,10 @@ subscribe(MasterUrl, FrameworkInfo, Force) when is_list(MasterUrl),
         type = 'SUBSCRIBE'
     },
 
-    Method = post,
     URL = MasterUrl ++ ?SCHEDULER_API_URI,
-    Header = [{"Accept", ?SCHEDULER_API_TRANSPORT}],
-    Type = ?SCHEDULER_API_TRANSPORT,
+    Headers = [{"Accept", ?SCHEDULER_API_TRANSPORT},
+               {"Content-Type", ?SCHEDULER_API_TRANSPORT}],
     Body = scheduler_pb:encode_msg(Call),
-    HTTPOptions = [],
-    Options = [{sync, false}, {stream, self}],
-    % TODO : handle redirects and disconnections
-    httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options).
+    Options = [async, {timeout, infinity}, {recv_timeout, infinity}],
+
+    hackney:post(URL, Headers, Body, Options).
