@@ -242,13 +242,10 @@ handle_cast({teardown}, #scheduler_state{ master_url = MasterUrl,
                                           framework_id = FrameworkId, 
                                           persistent_connection = PersistantConnection 
                                           } = State) ->
-
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         type = 'TEARDOWN'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     hackney:close(PersistantConnection),
 
     {noreply, State};
@@ -258,13 +255,11 @@ handle_cast({accept, Message}, #scheduler_state{ master_url = MasterUrl,
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Accept') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         accept = Message,
         type = 'ACCEPT'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({decline, Message}, #scheduler_state{ master_url = MasterUrl, 
@@ -272,99 +267,81 @@ handle_cast({decline, Message}, #scheduler_state{ master_url = MasterUrl,
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Decline') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         decline = Message,
         type = 'DECLINE'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({revive}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         type = 'REVIVE'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({kill, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-
     when is_record(Message, 'mesos.v1.scheduler.Call.Kill') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         kill = Message,
         type = 'KILL'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({shutdown, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
-
     when is_record(Message, 'mesos.v1.scheduler.Call.Shutdown') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         shutdown = Message,
         type = 'SHUTDOWN'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({acknowledge, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
     when is_record(Message, 'mesos.v1.scheduler.Call.Acknowledge') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         acknowledge = Message,
         type = 'ACKNOWLEDGE'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({reconcile, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
     when is_record(Message, 'mesos.v1.scheduler.Call.Reconcile') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         reconcile = Message,
         type = 'RECONCILE'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State};
 
 handle_cast({message, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
     when is_record(Message, 'mesos.v1.scheduler.Call.Message') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         message = Message,
         type = 'MESSAGE'
-    },
+    }),
 
-    ok = post(MasterUrl,Call),
     {noreply, State};
 
 handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) 
     when is_record(Message, 'mesos.v1.scheduler.Call.Request') ->
 
-    Call = #'mesos.v1.scheduler.Call'{
+    ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         message = Message,
         type = 'REQUEST'
-    },
-
-    ok = post(MasterUrl,Call),
+    }),
     {noreply, State}.
-
 
 handle_info({hackney_response, _Ref, {status, _StatusInt, _Reason}}, State) ->
     % io:format("got ~p status: ~p with reason ~p~n", [Ref, StatusInt, Reason]),
@@ -381,11 +358,7 @@ handle_info( {hackney_response, _Ref, Bin}, State) ->
     Events = to_events(BinaryBits),
     State1 = lists:foldl(fun(Event, State1) -> State2 = dispatch_event(Event, State1), State2 end, State, Events),
     % io:format(user, "NEW STATE : ~p~n", [State1]),
-    {noreply, State1};
-
-handle_info(Any, State) ->
-    io:format("unknown ~p~n", [Any]),
-    {noreply, State}.
+    {noreply, State1}.
 
 terminate(_Reason, _State) ->
   ok.
@@ -393,7 +366,7 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-% callbacks
+% private
 dispatch_event(Event, State) -> dispatch_event(Event#'mesos.v1.scheduler.Event'.type, Event, State).
 
 dispatch_event('SUBSCRIBED', Event, #scheduler_state{ framework_id = undefined, handler_module = Module, handler_state = HandlerState } = State) ->
@@ -449,8 +422,7 @@ dispatch_event('ERROR', Event, #scheduler_state{ handler_module = Module, handle
 % TODO : implement reconnect logic with backoff based on this
 dispatch_event('HEARTBEAT', Event, State) ->
     io:format("HEARTBEAT : ~p~n", [Event]), State.
-
-% private 
+ 
 to_events([]) -> [];
 to_events([H|T]) ->
     Response = scheduler_pb:decode_msg(H, 'mesos.v1.scheduler.Event'),
