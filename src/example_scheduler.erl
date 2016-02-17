@@ -1,6 +1,7 @@
 -module (example_scheduler).
 
--export ([init/1, subscribed/2, inverse_offers/3, offers/3, rescind/3, update/3, message/5, failure/5, error/3]).
+-export ([init/1, subscribed/2, inverse_offers/3, offers/3, rescind/3, update/3, 
+            message/5, failure/5, error/3]).
 
 -behaviour (scheduler).
 -include_lib("scheduler_pb.hrl").
@@ -16,26 +17,35 @@
 % scheduler:start_link( example_scheduler, []).
 
 init(_) ->
-
+    
     CurrentUser = os:getenv("USER"),
+    FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user=CurrentUser, 
+                                               name="Erlang Test Framework"},
 
-    FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user=CurrentUser, name="Erlang Test Framework"},
-
-    MasterUrl = "http://localhost:5050", ImplicitAcknowledgements = true, Force = true,
+    MasterUrl = "http://localhost:5050", 
+    ImplicitAcknowledgements = true, 
+    Force = true,
 
     { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, #framework_state{} }.
 
 subscribed(_Client, State) -> 
+    
     io:format("subscribed callback : ~p~n", [State]),
     {ok, State}.
 
 inverse_offers(_Client, _Offers,State) -> 
+    
     io:format("inverse offers callback : ~p~n", [State]),
     {ok, State}.
 
 offers(Client, Offers, #framework_state{ tasks_started = 1} = State) ->
+    
     io:format("Reached max tasks [1] so declining offer.~n", []),
-    OfferIds = lists:foldr(fun (#'mesos.v1.Offer'{id = OfferId}, Acc) ->  [OfferId | Acc ] end, [], Offers),
+
+    OfferIds = lists:foldr(
+        fun (#'mesos.v1.Offer'{ id = OfferId}, Acc) -> 
+            [OfferId | Acc ] end, [], Offers),
+
     scheduler:decline(Client, OfferIds),
     {ok,State}; 
 
@@ -93,10 +103,12 @@ offers(Client, [ #'mesos.v1.Offer'{ id = OfferId, agent_id = AgentId } | _] = Of
     {ok, State1}.
 
 rescind(_Client, OfferId, State) -> 
+    
     io:format("rescind callback : OfferId : ~p ~n", [OfferId]), 
     {ok, State}.
 
 update(_Client, #'mesos.v1.TaskStatus'{ state = 'TASK_LOST'} = TaskStatus, State) -> 
+    
     io:format("update callback : TASKLOST : TaskStatus: ~p ~n", [TaskStatus]),
     State1 = State#framework_state{tasks_started = 0},
     {ok, State1};
@@ -105,14 +117,19 @@ update(_Client, TaskStatus, State) ->
     {ok, State}.
 
 message(_Client, AgentId, ExecutorId, Data, State) ->
-    io:format("message callback : AgentId: ~p  ExecutorId :~p Data :~p~n", [AgentId, ExecutorId, Data]), 
+    
+    io:format("message callback : AgentId: ~p  ExecutorId :~p Data :~p~n", 
+              [AgentId, ExecutorId, Data]), 
     {ok, State}.
 
 failure(_Client, AgentId, ExecutorId, Status, State) ->
-    io:format("failure callback : AgentId: ~p  ExecutorId :~p Status :~p~n", [AgentId, ExecutorId, Status]), 
+    
+    io:format("failure callback : AgentId: ~p  ExecutorId :~p Status :~p~n", 
+              [AgentId, ExecutorId, Status]), 
     {ok, State}.
 
 error(_Client, Message, State) -> 
+    
     io:format("message callback : Message: ~p~n", [Message]), 
     {ok, State}.
 
