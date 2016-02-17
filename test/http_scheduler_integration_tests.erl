@@ -4,6 +4,8 @@
 -include ("mesos_pb.hrl").
 -include ("scheduler_pb.hrl").
 
+-define (MASTER_LOCATION, "127.0.0.1:5050").
+
 http_scheduler_can_be_started_and_stopped_test() ->
     
     meck:new(test_framework, [non_strict]), 
@@ -14,8 +16,7 @@ http_scheduler_can_be_started_and_stopped_test() ->
         FrameworkInfo = #'mesos.v1.FrameworkInfo'{ user=CurrentUser, 
                                                name="Erlang Test Framework"},
 
-        MasterUrl = "http://localhost:5050", 
-        { FrameworkInfo, MasterUrl, true, true, [] }
+        { FrameworkInfo, ?MASTER_LOCATION, true, true, [] }
         end),
     
     meck:expect(test_framework, subscribed , fun(_Client, State) ->  {ok,State} end),
