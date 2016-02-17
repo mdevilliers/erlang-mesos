@@ -1,20 +1,18 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import "mesos.proto";
 
@@ -39,10 +37,7 @@ message Event {
     KILL = 3;         // See 'Kill' below.
     ACKNOWLEDGED = 4; // See 'Acknowledged' below.
     MESSAGE = 5;      // See 'Message' below.
-
-    // Received when the agent asks the executor to shutdown/kill itself.
-    SHUTDOWN = 6;
-
+    SHUTDOWN = 6;     // See 'Shutdown' below.
     ERROR = 7;        // See 'Error' below.
   }
 
@@ -89,6 +84,16 @@ message Event {
     required bytes data = 1;
   }
 
+  // Received when the agent asks the executor to shutdown/kill itself. The
+  // executor is then required to kill all its active tasks, send 'TASK_KILLED'
+  // status updates and gracefully exit. If an executor does not terminate
+  // within a certain period ('grace_period_seconds'), the agent will forcefully
+  // destroy the container where the executor is running. The agent would then
+  // send 'TASK_LOST' updates for any remaining active tasks of this executor.
+  message Shutdown {
+    optional double grace_period_seconds = 1 [default = 5.0];
+  }
+
   // Received in case the executor sends invalid calls (e.g.,
   // required values not set).
   // TODO(arojas): Remove this once the old executor driver is no
@@ -107,7 +112,8 @@ message Event {
   optional Launch launch = 4;
   optional Kill kill = 5;
   optional Message message = 6;
-  optional Error error = 7;
+  optional Shutdown shutdown = 7;
+  optional Error error = 8;
 }
 
 
@@ -130,8 +136,8 @@ message Event {
   // it must include a list of all the tasks and updates which haven't been
   // acknowledged by the scheduler.
   message Subscribe {
-    repeated TaskInfo tasks = 1;
-    repeated Update updates = 2;
+    repeated TaskInfo unacknowledged_tasks = 1;
+    repeated Update unacknowledged_updates = 2;
   }
 
   // Notifies the scheduler that a task has transitioned from one
@@ -145,8 +151,6 @@ message Event {
   // 'Acknowledged' in the 'Events' section above for the semantics.
   message Update {
     required TaskStatus status = 1;
-    required double timestamp = 2;
-    required bytes uuid = 3;
   }
 
   // Sends arbitrary binary data to the scheduler. Note that Mesos

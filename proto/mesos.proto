@@ -1,20 +1,18 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package mesos.v1;
 
@@ -324,7 +322,7 @@ message HealthCheck {
   // Amount of time to wait for the health check to complete.
   optional double timeout_seconds = 4 [default = 20.0];
 
-  // Number of consecutive failures until considered unhealthy.
+  // Number of consecutive failures until signaling kill task.
   optional uint32 consecutive_failures = 5 [default = 3];
 
   // Amount of time to allow failed health checks since launch.
@@ -368,27 +366,6 @@ message CommandInfo {
     // "docs/fetcher-cache-internals.md".
     optional bool cache = 4;
   }
-
-  // Describes a container.
-  // Not all containerizers currently implement ContainerInfo, so it
-  // is possible that a launched task will fail due to supplying this
-  // attribute.
-  // NOTE: The containerizer API is currently in an early beta or
-  // even alpha state. Some details, like the exact semantics of an
-  // "image" or "options" are not yet hardened.
-  // TODO(tillt): Describe the exact scheme and semantics of "image"
-  // and "options".
-  message ContainerInfo {
-    // URI describing the container image name.
-    required string image = 1;
-
-    // Describes additional options passed to the containerizer.
-    repeated string options = 2;
-  }
-
-  // NOTE: MesosContainerizer does currently not support this
-  // attribute and tasks supplying a 'container' will fail.
-  optional ContainerInfo container = 4;
 
   repeated URI uris = 1;
 
@@ -578,6 +555,10 @@ message Resource {
   optional Value.Scalar scalar = 3;
   optional Value.Ranges ranges = 4;
   optional Value.Set set = 5;
+
+  // The role that this resource is reserved for. If "*", this indicates
+  // that the resource is unreserved. Otherwise, the resource will only
+  // be offered to frameworks that belong to this role.
   optional string role = 6 [default = "*"];
 
   message ReservationInfo {
@@ -588,13 +569,17 @@ message Resource {
     // NOTE: We currently do not allow frameworks with role "*" to
     // make dynamic reservations.
 
-    // This field indicates the principal of the operator or framework
-    // that reserved this resource. It is used in conjunction with the
-    // "unreserve" ACL to determine whether the entity attempting to
-    // unreserve this resource is permitted to do so.
-    // NOTE: This field should match the FrameworkInfo.principal of
-    // the framework that reserved this resource.
-    required string principal = 1;
+    // This field indicates the principal of the framework or operator
+    // that reserved this resource. If reserved by a framework, the
+    // field should match the `FrameworkInfo.principal`. It is used in
+    // conjunction with the `UnreserveResources` ACL to determine
+    // whether the entity attempting to unreserve this resource is
+    // permitted to do so.
+    //
+    // NOTE: Currently, a principal is required in order to reserve
+    // resources, so the master disallows any reserve operations
+    // without a principal. This constraint will be removed in 0.28.
+    optional string principal = 1;
   }
 
   // If this is set, this resource was dynamically reserved by an
@@ -618,6 +603,20 @@ message Resource {
       // A unique ID for the persistent disk volume.
       // NOTE: The ID needs to be unique per role on each agent.
       required string id = 1;
+
+      // This field indicates the principal of the operator or
+      // framework that created this volume. It is used in conjunction
+      // with the "destroy" ACL to determine whether an entity
+      // attempting to destroy the volume is permitted to do so.
+      //
+      // NOTE: This field is optional, while the `principal` found in
+      // `ReservationInfo` is required. This field is optional to
+      // allow for the possibility of volume creation without a
+      // principal, though currently it must be provided.
+      //
+      // NOTE: This field should match the FrameworkInfo.principal of
+      // the framework that created the volume.
+      optional string principal = 2;
     }
 
     optional Persistence persistence = 1;
@@ -632,6 +631,36 @@ message Resource {
     // task/executor terminates. Currently, if 'persistence' is set,
     // 'volume' must be set.
     optional Volume volume = 2;
+
+    // Describes where a disk originates from.
+    // TODO(jmlvanre): Add support for BLOCK devices.
+    message Source {
+      enum Type {
+        PATH = 1;
+        MOUNT = 2;
+      }
+
+      // A folder that can be located on a separate disk device. This
+      // can be shared and carved up as necessary between frameworks.
+      message Path {
+        // Path to the folder (e.g., /mnt/raid/disk0).
+        required string root = 1;
+      }
+
+      // A mounted file-system set up by the Agent administrator. This
+      // can only be used exclusively: a framework can not accept a
+      // partial amount of this disk.
+      message Mount {
+        // Path to mount point (e.g., /mnt/raid/disk0).
+        required string root = 1;
+      }
+
+      required Type type = 1;
+      optional Path path = 2;
+      optional Mount mount = 3;
+    }
+
+    optional Source source = 3;
   }
 
   optional DiskInfo disk = 7;
@@ -905,7 +934,7 @@ message Request {
 
 
 /**
- * Describes some resources available on a agent. An offer only
+ * Describes some resources available on an agent. An offer only
  * contains resources from a single agent.
  */
 message Offer {
@@ -983,7 +1012,7 @@ message InverseOffer {
 
   // URL for reaching the agent running on the host.  This enables some
   // optimizations as described in MESOS-3012, such as allowing the
-  // scheduler driver to bypass the master and talk directly with a agent.
+  // scheduler driver to bypass the master and talk directly with an agent.
   optional URL url = 2;
 
   // The framework that should release its resources.
@@ -1315,6 +1344,11 @@ message Image {
     //
     // See: https://docs.docker.com/reference/commandline/pull/
     required string name = 1;
+
+    // Credential to authenticate with docker registry.
+    // NOTE: This is not encrypted, therefore framework and operators
+    // should enable SSL when passing this information.
+    optional Credential credential = 2;
   }
 
   required Type type = 1;
@@ -1359,7 +1393,7 @@ message Volume {
 
 /**
  * Describes a network request by framework as well as network resolution
- * provided by the the executor or Agent.
+ * provided by the executor or Agent.
  *
  * A framework may request the network isolator on the Agent to isolate the
  * container in a network namespace and create a virtual network interface.
@@ -1486,6 +1520,9 @@ message ContainerInfo {
     // pull the docker image from the registry even if the image
     // is already downloaded on the agent.
     optional bool force_pull_image = 6;
+
+    // The name of volume driver plugin.
+    optional string volume_driver = 7;
   }
 
   message MesosInfo {
@@ -1521,7 +1558,7 @@ message ContainerStatus {
  * Collection of labels.
  */
 message Labels {
-    repeated Label labels = 1;
+  repeated Label labels = 1;
 }
 
 
@@ -1538,10 +1575,20 @@ message Label {
  * Named port used for service discovery.
  */
 message Port {
+  // Port number on which the framework exposes a service.
   required uint32 number = 1;
+  // Name of the service hosted on this port.
   optional string name = 2;
+  // Layer 4-7 protocol on which the framework exposes its services.
   optional string protocol = 3;
+  // This field restricts discovery within a framework (FRAMEWORK),
+  // within a Mesos cluster (CLUSTER), or places no restrictions (EXTERNAL).
+  // The visibility setting for a Port overrides the general visibility setting
+  // in the DiscoveryInfo.
   optional DiscoveryInfo.Visibility visibility = 4;
+  // This can be used to decorate the message with metadata to be
+  // interpreted by external applications such as firewalls.
+  optional Labels labels = 5;
 }
 
 
