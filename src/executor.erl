@@ -11,19 +11,19 @@
   %   repeated Update unacknowledged_updates = 2;
   % }
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, 
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
--record (executor_state, { 
-        master_url, 
-        persistent_connection, 
+-record (executor_state, {
+        master_url,
+        persistent_connection,
         handler_module,
         handler_state,
         environmentals,
-        framework_id 
+        framework_id
         }).
 
--record (environmentals, { 
+-record (environmentals, {
         mesos_framework_id,
         mesos_executor_id,
         mesos_directory,
@@ -39,37 +39,37 @@
 % callback specifications
 -type executor_client() :: pid().
 
--callback init( Args :: any()) 
+-callback init( Args :: any())
     -> {State :: any()}.
 
--callback subscribed(Client :: executor_client(), 
-                     ExecutorInfo :: #'mesos.v1.ExecutorInfo'{}, 
-                     AgentInfo ::  #'mesos.v1.AgentInfo'{}, 
-                     State :: any()) 
+-callback subscribed(Client :: executor_client(),
+                     ExecutorInfo :: #'mesos.v1.ExecutorInfo'{},
+                     AgentInfo ::  #'mesos.v1.AgentInfo'{},
+                     State :: any())
     -> {ok, State :: any()}.
 
--callback launch(Client :: executor_client(), 
-                 TaskInfo :: #'mesos.v1.TaskInfo'{}, 
+-callback launch(Client :: executor_client(),
+                 TaskInfo :: #'mesos.v1.TaskInfo'{},
                  State :: any()) -> {ok, State :: any()}.
 
--callback kill(Client :: executor_client(), 
-               TaskId :: #'mesos.v1.TaskID'{}, 
+-callback kill(Client :: executor_client(),
+               TaskId :: #'mesos.v1.TaskID'{},
                State :: any()) -> {ok, State :: any()}.
 
--callback acknowledged(Client :: executor_client(), 
-                       TaskId :: #'mesos.v1.TaskID'{}, 
+-callback acknowledged(Client :: executor_client(),
+                       TaskId :: #'mesos.v1.TaskID'{},
                        Uuid :: list(), 
                        State :: any()) -> {ok, State :: any()}.
 
--callback message(Client :: executor_client(),  
-                  Data :: list(), 
+-callback message(Client :: executor_client(),
+                  Data :: list(),
                   State :: any()) -> {ok, State :: any()}.
 
--callback shutdown(Client :: executor_client(),  
-                  GracePeriodInSeconds :: number(), 
+-callback shutdown(Client :: executor_client(),
+                  GracePeriodInSeconds :: number(),
                   State :: any()) -> {ok, State :: any()}.
 
--callback error( Client :: executor_client(), 
+-callback error( Client :: executor_client(),
                   Message :: list(), 
                   State :: any()) -> {ok, State :: any()}.
 
@@ -91,27 +91,27 @@ start_link(Module, Args ) ->
 -spec update(Executor :: executor_client(), 
              TaskStatus :: #'mesos.v1.TaskStatus'{}) -> ok.
 
-update(Executor, TaskStatus) when is_pid(Executor), 
-                                  is_record(TaskStatus,'mesos.v1.TaskStatus') -> 
-    
-    gen_server:cast(Executor, {update, #'mesos.v1.executor.Call.Update'{ 
+update(Executor, TaskStatus) when is_pid(Executor),
+                                  is_record(TaskStatus,'mesos.v1.TaskStatus') ->
+
+    gen_server:cast(Executor, {update, #'mesos.v1.executor.Call.Update'{
         status = TaskStatus
     }}).
 
--spec message(Executor :: executor_client(), 
+-spec message(Executor :: executor_client(),
              Data :: list()) -> ok.
 
-message(Executor, Data) when is_pid(Executor), 
-                            is_list(Data) -> 
-    
-    gen_server:cast(Executor, {message, #'mesos.v1.executor.Call.Message'{ 
+message(Executor, Data) when is_pid(Executor),
+                            is_list(Data) ->
+
+    gen_server:cast(Executor, {message, #'mesos.v1.executor.Call.Message'{
         data = Data
     }}).
 
 % gen server callbacks
 init({Module, Args}) ->
     gen_server:cast(self(), {startup, Module, Args}),
-    
+
     {ok, #executor_state{
         environmentals = load_environmental_variables()
     }}.
@@ -121,7 +121,7 @@ handle_call(_, _, State) ->
 
 handle_cast({startup, Module, Args}, State)->
 
-    case Module:init(Args) of 
+    case Module:init(Args) of
         { State} ->
             {ok, Request} = subscribe(),
             State1 = State#executor_state{
@@ -130,9 +130,9 @@ handle_cast({startup, Module, Args}, State)->
                                 handler_state = State},
             {noreply, State1};
 
-        Else ->  
-                Error = {bad_return_value, Else},   
-                {stop, Error, #executor_state{ handler_module = Module}}                                         
+        Else ->
+                Error = {bad_return_value, Else},
+                {stop, Error, #executor_state{ handler_module = Module}}
     end;
 
 handle_cast({message, Message}, State)
@@ -145,7 +145,7 @@ handle_cast({message, Message}, State)
     }),
     {noreply,State};
 
-handle_cast({update, Update}, State) 
+handle_cast({update, Update}, State)
         when is_record(Update, 'mesos.v1.executor.Call.Update') ->
 
     ok = post(#'mesos.v1.executor.Call'{
@@ -178,7 +178,7 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-% private 
+% private
 to_events([]) -> [];
 to_events([H|T]) ->
     Response = scheduler_pb:decode_msg(H, 'mesos.v1.executor.Event'),
@@ -187,61 +187,61 @@ to_events([H|T]) ->
 dispatch_event(Event, State) -> dispatch_event(Event#'mesos.v1.executor.Event'.type, Event, State).
 
 dispatch_event('SUBSCRIBED', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Subscribed'{ 
-        executor_info = nil, 
-        framework_info = nil, 
+
+    #'mesos.v1.executor.Event.Subscribed'{
+        executor_info = nil,
+        framework_info = nil,
         agent_info = AgentInfo } = Event#'mesos.v1.executor.Event'.subscribed,
-    
+
     {ok, HandlerState1} = Module:subscribed(self(), AgentInfo, HandlerState),
     State#executor_state{framework_id = nil, handler_state = HandlerState1};
 
 dispatch_event('LAUNCH', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Launch'{ 
+
+    #'mesos.v1.executor.Event.Launch'{
         task = TaskInfo } = Event#'mesos.v1.executor.Event'.launch,
-    
+
     {ok, HandlerState1} = Module:launch(self(), TaskInfo, HandlerState),
     State#executor_state{handler_state = HandlerState1};
 
 dispatch_event('KILL', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Kill'{ 
+
+    #'mesos.v1.executor.Event.Kill'{
         task_id = TaskID } = Event#'mesos.v1.executor.Event'.kill,
-    
+
     {ok, HandlerState1} = Module:kill(self(), TaskID, HandlerState),
     State#executor_state{handler_state = HandlerState1};
 
 dispatch_event('ACKNOWLEDGED', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Acknowledged'{ 
+
+    #'mesos.v1.executor.Event.Acknowledged'{
         task_id = TaskID, uuid = Uuid } = Event#'mesos.v1.executor.Event'.acknowledged,
-    
+
     {ok, HandlerState1} = Module:acknowledged(self(), TaskID, Uuid, HandlerState),
     State#executor_state{handler_state = HandlerState1};
 
 dispatch_event('MESSAGE', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Message'{ 
+
+    #'mesos.v1.executor.Event.Message'{
         data = Data } = Event#'mesos.v1.executor.Event'.message,
-    
+
     {ok, HandlerState1} = Module:message(self(), Data, HandlerState),
     State#executor_state{handler_state = HandlerState1};
 
 
 dispatch_event('SHUTDOWN', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Shutdown'{ 
+
+    #'mesos.v1.executor.Event.Shutdown'{
         grace_period_seconds = GracePeriodInSeconds } = Event#'mesos.v1.executor.Event'.shutdown,
-    
+
     {ok, HandlerState1} = Module:shutdown(self(), GracePeriodInSeconds, HandlerState),
     State#executor_state{handler_state = HandlerState1};
 
 dispatch_event('ERROR', Event, #executor_state{ handler_module = Module, handler_state = HandlerState } = State) ->
-    
-    #'mesos.v1.executor.Event.Error'{ 
+
+    #'mesos.v1.executor.Event.Error'{
         message = Message } = Event#'mesos.v1.executor.Event'.message,
-    
+
     {ok, HandlerState1} = Module:error(self(), Message, HandlerState),
     State#executor_state{handler_state = HandlerState1}.
 
@@ -250,19 +250,19 @@ post(Message) ->
     URL = "MasterUrl" ++ ?EXECUTOR_API_URI,
     Headers = [{"Accept", ?EXECUTOR_API_TRANSPORT},
               {"Content-Type", ?EXECUTOR_API_TRANSPORT}],
-    
+
     Body = scheduler_pb:encode_msg(Message),
 
     case hackney:post(URL, Headers, Body) of
         {ok, 202, _, _} -> ok ;
         {ok, 400, _, Ref} ->
-            % TODO : resolve this 
+            % TODO : resolve this
             io:format("400 : ~p~n", [hackney:body(Ref)]),
             ok
     end.
 
 load_environmental_variables()->
-    #environmentals{ 
+    #environmentals{
         mesos_framework_id = os:get_env("MESOS_FRAMEWORK_ID"),
         mesos_executor_id = os:get_env("MESOS_EXECUTOR_ID"),
         mesos_directory = os:get_env("MESOS_DIRECTORY"),
