@@ -28,12 +28,12 @@ init(_) ->
 
     { FrameworkInfo, MasterUrl, ImplicitAcknowledgements, Force, #framework_state{} }.
 
-subscribed(_Client, State) -> 
+subscribed(_Client, State) ->
 
     io:format("subscribed callback : ~p~n", [State]),
     {ok, State}.
 
-inverse_offers(_Client, _Offers,State) -> 
+inverse_offers(_Client, _Offers,State) ->
 
     io:format("inverse offers callback : ~p~n", [State]),
     {ok, State}.
@@ -47,7 +47,7 @@ offers(Client, Offers, #framework_state{ tasks_started = 1} = State) ->
             [OfferId | Acc ] end, [], Offers),
 
     scheduler:decline(Client, OfferIds),
-    {ok,State}; 
+    {ok,State};
 
 offers(Client, [ #'mesos.v1.Offer'{ id = OfferId, agent_id = AgentId } | _] = Offers, State) ->
 
@@ -75,7 +75,7 @@ offers(Client, [ #'mesos.v1.Offer'{ id = OfferId, agent_id = AgentId } | _] = Of
         name = "erlang_task_" ++ Id,
         task_id = #'mesos.v1.TaskID'{ value = "task_id_" ++ Id},
         agent_id = AgentId,
-        resources = [ Cpu],
+        resources = [Cpu],
         executor = #'mesos.v1.ExecutorInfo'{
                     executor_id= #'mesos.v1.ExecutorID'{
                         value = "executor_id_" ++ Id
@@ -83,10 +83,10 @@ offers(Client, [ #'mesos.v1.Offer'{ id = OfferId, agent_id = AgentId } | _] = Of
                     command = #'mesos.v1.CommandInfo'{
                         value = Command
                         },
-                     resources = [ Cpu, Memory]
+                     resources = [Cpu, Memory]
                     }
     },
-   
+
     Operation = #'mesos.v1.Offer.Operation'{
         type = 'LAUNCH',
         launch = #'mesos.v1.Offer.Operation.Launch'{
