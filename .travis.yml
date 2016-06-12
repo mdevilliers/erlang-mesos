@@ -2,5 +2,11 @@ language: erlang
 otp_release:
     - 17.5
     - 18.0
+
+sudo: required
+
+services:
+    - docker
+
 before_install:
     - make test-environment
