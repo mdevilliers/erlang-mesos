@@ -8,10 +8,6 @@ sudo: required
 services:
     - docker
 
-addons:
-    hosts:
-        - travis.dev
-
 before_install:
     - make test-environment
     - docker ps

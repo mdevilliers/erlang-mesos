@@ -1,16 +1,16 @@
-.PHONY: bootstrap test
+.DEFAULT_GOAL := help
 
 test:
-	rebar test
+	./rebar skip_deps=true eunit
 
-bootstrap:
-	rebar get-deps
+bootstrap: # set up environment
+	./rebar get-deps
 
-.PHONY: bootstrap
+.PHONY: test bootstrap
 
-test-environment: zookeeper mesos-master mesos-slave
+test-environment: zookeeper mesos-master mesos-slave # install integration environment
 
-test-environment-down:
+test-environment-down: # remove integration environment
 	docker rm -f zookeeper mesos-master mesos-slave
 
 zookeeper:
@@ -24,9 +24,11 @@ mesos-master:
 	-e MESOS_REGISTRY=in_memory \
 	-e MESOS_LOG_DIR=/var/log/mesos \
 	-e MESOS_WORK_DIR=/var/tmp/mesos \
+	-e HOSTNAME=dev \
 	-v "$(pwd)/log/mesos:/var/log/mesos" \
 	-v "$(pwd)/tmp/mesos:/var/tmp/mesos" \
-	mesosphere/mesos-master:0.28.1
+	-it --entrypoint mesos-master \
+	mesosphere/mesos:0.28.1 --ip=127.0.0.1 --hostname=127.0.0.1 --registry=in_memory
 
 mesos-slave:
 	docker run -d --net=host --name mesos-slave --privileged \
@@ -45,6 +47,13 @@ mesos-slave:
 	-v /lib/x86_64-linux-gnu/libsystemd-journal.so.0:/lib/x86_64-linux-gnu/libsystemd-journal.so.0 \
 	-v /usr/lib/x86_64-linux-gnu/libapparmor.so.1:/usr/lib/x86_64-linux-gnu/libapparmor.so.1 \
 	-v /usr/lib/x86_64-linux-gnu/libltdl.so.7:/usr/lib/x86_64-linux-gnu/libltdl.so.7 \
-	mesosphere/mesos-slave:0.28.1
+	-it --entrypoint mesos-slave \
+	mesosphere/mesos:0.28.1
 
 .PHONY: test-environment test-environment-down mesos-master mesos-slave zookeeper
+
+# 'help' parses the Makefile and displays the help text
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+PHONY: help
