@@ -8,5 +8,13 @@ sudo: required
 services:
     - docker
 
+addons:
+    hosts:
+        - travis.dev
+
 before_install:
     - make test-environment
+    - docker ps
+    - docker logs zookeeper
+    - docker logs mesos-master
+    - docker logs mesos-slave 
