@@ -17,7 +17,8 @@
         persistent_connection,
         framework_id = undefined,
         handler_module,
-        handler_state
+        handler_state,
+        stream_id
         }).
 
 -define (SCHEDULER_API_URI, "/api/v1/scheduler").
@@ -240,18 +241,19 @@ handle_cast({startup, Module, Args}, _)->
 
 handle_cast({teardown}, #scheduler_state{ master_url = MasterUrl,
                                           framework_id = FrameworkId,
-                                          persistent_connection = PersistantConnection
+                                          persistent_connection = PersistantConnection,
+                                          stream_id = StreamId
                                           } = State) ->
     ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         type = 'TEARDOWN'
-    }),
+    },StreamId),
     hackney:close(PersistantConnection),
 
     {noreply, State};
 
 handle_cast({accept, Message}, #scheduler_state{ master_url = MasterUrl,
-                                                 framework_id = FrameworkId} = State)
+                                                 framework_id = FrameworkId, stream_id = StreamId} = State)
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Accept') ->
 
@@ -259,11 +261,11 @@ handle_cast({accept, Message}, #scheduler_state{ master_url = MasterUrl,
         framework_id = FrameworkId,
         accept = Message,
         type = 'ACCEPT'
-    }),
+    },StreamId),
     {noreply, State};
 
 handle_cast({decline, Message}, #scheduler_state{ master_url = MasterUrl,
-                                                  framework_id = FrameworkId} = State)
+                                                  framework_id = FrameworkId, stream_id = StreamId} = State)
 
     when is_record(Message, 'mesos.v1.scheduler.Call.Decline') ->
 
@@ -271,86 +273,90 @@ handle_cast({decline, Message}, #scheduler_state{ master_url = MasterUrl,
         framework_id = FrameworkId,
         decline = Message,
         type = 'DECLINE'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({revive}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State) ->
+handle_cast({revive}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State) ->
 
     ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         type = 'REVIVE'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({kill, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({kill, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Kill') ->
 
     ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         kill = Message,
         type = 'KILL'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({shutdown, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({shutdown, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Shutdown') ->
 
     ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         shutdown = Message,
         type = 'SHUTDOWN'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({acknowledge, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({acknowledge, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Acknowledge') ->
 
     ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         acknowledge = Message,
         type = 'ACKNOWLEDGE'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({reconcile, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({reconcile, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Reconcile') ->
 
     ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         reconcile = Message,
         type = 'RECONCILE'
-    }),
+    },StreamId),
     {noreply, State};
 
-handle_cast({message, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({message, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Message') ->
 
     ok = post(MasterUrl, #'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         message = Message,
         type = 'MESSAGE'
-    }),
+    },StreamId),
 
     {noreply, State};
 
-handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId} = State)
+handle_cast({request, Message}, #scheduler_state{master_url = MasterUrl, framework_id = FrameworkId, stream_id = StreamId} = State)
     when is_record(Message, 'mesos.v1.scheduler.Call.Request') ->
 
     ok = post(MasterUrl,#'mesos.v1.scheduler.Call'{
         framework_id = FrameworkId,
         message = Message,
         type = 'REQUEST'
-    }),
+    }, StreamId),
     {noreply, State}.
 
 handle_info({hackney_response, _Ref, {status, _StatusInt, _Reason}}, State) ->
-    % io:format("got ~p status: ~p with reason ~p~n", [Ref, StatusInt, Reason]),
+    %io:format("got ~p status: ~p with reason ~p~n", [_Ref, _StatusInt, _Reason]),
     {noreply,State};
-handle_info({hackney_response, _Ref, {headers, _Headers}}, State) ->
-    % io:format(user, "hackney_response headers ~p ~p~n", [Ref, Headers]),
-    {noreply,State};
+handle_info({hackney_response, _Ref, {headers, Headers}}, State) ->
+    %io:format(user, "hackney_response headers ~p ~p~n", [_Ref, Headers]),
+    case hackney_headers:get_value(<<"Mesos-Stream-Id">>, hackney_headers:new(Headers), unknown) of
+      unkown -> {stop,"'Mesos-Stream-Id' not found",State};
+      Value ->  {noreply, State#scheduler_state{stream_id=Value}}
+    end;
+
 handle_info({hackney_response, _Ref, done}, State) ->
-    % io:format(user, "hackney_response done ~p ~n", [Ref]),
+    %io:format(user, "hackney_response done ~p ~n", [_Ref]),
     {noreply,State};
 handle_info( {hackney_response, _Ref, Bin}, State) ->
     % io:format(user, "hackney_response ~p ~p~n", [Ref, Bin]),
@@ -447,12 +453,13 @@ offer_dispatch(Module, Offers, InverseOffers, State) ->
     {ok, State2} = Module:inverse_offers(self(), InverseOffers, State1),
     {ok, State2}.
 
-post(MasterUrl, Message) ->
+post(MasterUrl, Message, StreamId) ->
 
     URL = MasterUrl ++ ?SCHEDULER_API_URI,
     Headers = [{"Accept", ?SCHEDULER_API_TRANSPORT},
-              {"Content-Type", ?SCHEDULER_API_TRANSPORT}],
-    
+              {"Content-Type", ?SCHEDULER_API_TRANSPORT},
+              {"Mesos-Stream-Id", StreamId}],
+
     Body = scheduler_pb:encode_msg(Message),
 
     case hackney:post(URL, Headers, Body) of

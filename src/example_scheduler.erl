@@ -107,7 +107,7 @@ rescind(_Client, OfferId, State) ->
     io:format("rescind callback : OfferId : ~p ~n", [OfferId]),
     {ok, State}.
 
-update(_Client, #'mesos.v1.TaskStatus'{ state = 'TASK_LOST'} = TaskStatus, State) ->
+update(_Client, #'mesos.v1.TaskStatus'{ state = 'TASK_FAILED'} = TaskStatus, State) ->
 
     io:format("update callback : TASKLOST : TaskStatus: ~p ~n", [TaskStatus]),
     State1 = State#framework_state{tasks_started = 0},
