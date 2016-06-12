@@ -38,8 +38,8 @@ mesos-slave:
 	-e MESOS_CONTAINERIZERS=docker,mesos \
 	-e MESOS_LOG_DIR=/var/log/mesos \
 	-e MESOS_WORK_DIR=/var/tmp/mesos \
-	-v "$(pwd)/log/mesos:/var/log/mesos" \
-	-v "$(pwd)/tmp/mesos:/var/tmp/mesos" \
+	-v "$(pwd)/log/mesos-slave:/var/log/mesos" \
+	-v "$(pwd)/tmp/mesos-slave:/var/tmp/mesos" \
 	-v /var/run/docker.sock:/var/run/docker.sock \
 	-v /cgroup:/cgroup \
 	-v /sys:/sys \
@@ -48,7 +48,7 @@ mesos-slave:
 	-v /usr/lib/x86_64-linux-gnu/libapparmor.so.1:/usr/lib/x86_64-linux-gnu/libapparmor.so.1 \
 	-v /usr/lib/x86_64-linux-gnu/libltdl.so.7:/usr/lib/x86_64-linux-gnu/libltdl.so.7 \
 	-it --entrypoint mesos-slave \
-	mesosphere/mesos:0.28.1
+	mesosphere/mesos:0.28.1 --ip=127.0.0.1 --hostname=127.0.0.1 
 
 .PHONY: test-environment test-environment-down mesos-master mesos-slave zookeeper
 
